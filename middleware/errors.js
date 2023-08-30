@@ -18,7 +18,7 @@ const PageNotFound = (req,res,next)=>{
 }
 
 
-  const ReqError = ()=> {
+  const ReqError = (req,res,next)=> {
     if (req.headers.expect === 'something') {
       const error = new Error('Expectation Failed');
       error.statusCode = 417;

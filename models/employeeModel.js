@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const employeeSchema = new mongoose.Schema({
   id_proof: {
     type: String,
@@ -9,10 +8,10 @@ const employeeSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  address: {
-    type: String,
-    required: true,
-  },
+  location:[{
+    type:mongoose.Schema.Types.ObjectId,
+    ref : "Location"
+       }],
   profile: {
     photo: {
       type: String,
@@ -20,7 +19,7 @@ const employeeSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ["completed", "not completed"],
+      enum: ["active", "not active"],
       required: true,
     },
   },

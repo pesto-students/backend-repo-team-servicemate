@@ -5,30 +5,46 @@ const serviceProviderModal = mongoose.Schema({
           trim : true,
           required:true
          },
+       
+         profilePic: {
+          type: String
+        },
          serviceProviderEmalId:{
             type:String,
             trim : true,
             required : true
          },
-         status:{
+         userType: {
+          type: Boolean,
+          default: false
+        },
+         phoneNo:{
+          type:Number,
+          required : true
+         },
+         workingAs:{
             type: String,
-            enum: ['Freelancer', 'Vendor']
+            enum: ['freelancer', 'vendor','vendorEmployee']
          },
          employeeData:[{
              type:mongoose.Schema.Types.ObjectId,
-             ref:"EmployeeData"
+             ref:"ServiceProvider"
          }],
+         service:[{
+          type:mongoose.Schema.Types.ObjectId,
+          ref:"Services"
+         }],
+         location:[{
+          type:mongoose.Schema.Types.ObjectId,
+          ref : "Location"
+             }],
          openHours: [{
-                location:[{
-                 type:mongoose.Schema.Types.ObjectId,
-                 ref : "Location"
-                    }],
+                
                     timeSlot:[{
-                      day: {
+                      day: [{
                         type: String,
-                        enum: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
                         required: true
-                      },
+                      }],
                       fromTime: {
                         type: String,
                         required: true
@@ -39,15 +55,15 @@ const serviceProviderModal = mongoose.Schema({
                       }
                     }]    
          }],
-         portfolio:{
+         portfolio:[{
               image:{
                 type:String,
-                required:true,
+              
               },
               verified:{
                 type:Boolean,
               }
-            },
+            }],
           createdOn: {
             type: Date,
             default: Date.now
@@ -67,7 +83,7 @@ const serviceProviderModal = mongoose.Schema({
                 required:true
             },
             activatedOn:{
-                type:Data,
+                type:Date,
                 required:true
             },
             status:{
@@ -79,5 +95,5 @@ const serviceProviderModal = mongoose.Schema({
 
 });
 
-const ServiceProvider = mongoose.Model("ServiceProvider",serviceProviderModal);
+const ServiceProvider = mongoose.model("ServiceProvider",serviceProviderModal);
 module.exports = ServiceProvider;

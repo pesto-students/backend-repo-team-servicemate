@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const usecaseSchema = new mongoose.Schema({
   id: {
     type: String,
@@ -9,6 +10,7 @@ const usecaseSchema = new mongoose.Schema({
     enum: ["plumbing", "electrician", "carpenter"],
     required: true,
   },
+  
   usecaseSubtype: {
     type: String,
     required: true,
@@ -26,6 +28,5 @@ const usecaseSchema = new mongoose.Schema({
     },
   ],
 });
-
 const usecase = mongoose.model("usecase", usecaseSchema);
 module.exports = usecase;

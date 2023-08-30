@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const planSchema = mongoose.Schema({
+const planSchema =new mongoose.Schema({
 
     userId : {
         type:mongoose.Schema.Types.ObjectId,
@@ -8,8 +8,6 @@ const planSchema = mongoose.Schema({
     name_of_Plan :{
         type:String,
     },
-
-    servicesOpted : [{name_of_Plan }],
 
     assignedTo : [{type:mongoose.Schema.Types.ObjectId,
                     ref:"Employee"}],
