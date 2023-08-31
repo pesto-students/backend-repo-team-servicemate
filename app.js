@@ -24,6 +24,21 @@ app.get('/', (req, res) => {
     res.send(req.httpVersion)
 });
 
+app.get("/api/getLocation/:lat/:lon", async (req, res) => {
+    const { lat, lon } = req.params
+    const { by } = req.query
+    try {
+        const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        const responseData = data.address && by ? { [by]: data.address[by] } : data.address
+        res.json(responseData);
+    } catch (error) {
+        console.log(error);
+        res.json({})
+    }
+})
+
 //error and errorHandler section
 
 
