@@ -70,7 +70,7 @@ const searchCatagories = asyncHandler(async (req, res) => {
     res.status(400).json({ message: 'Error in searching categories', error: error.message });
   }
 });
-const searchService = asyncHandler(async (req, res) => {
+  const searchService = asyncHandler(async (req, res) => {
   const { catagories } = req.query;
   console.log(catagories);
 
@@ -103,16 +103,18 @@ const searchService = asyncHandler(async (req, res) => {
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
-          { serviceProviderEmalId: regexSearch }
+          { serviceProviderEmalId: regexSearch },         
+   //       { price: { $gte: parseFloat(price), $lte: parseFloat(price) } },
         ],
       }).select('_id');
       console.log("serviceProviderId" + serviceProvider,regexSearch);
-
+     
       services = await Services.find({
         $or: [
           { services: regexSearch },
           { serviceProviderId: { $in: serviceProvider } },
           { catagories: { $in: categories } },
+ 
         ],
       }).populate({
           path: "catagories",
@@ -129,7 +131,7 @@ const searchService = asyncHandler(async (req, res) => {
         .exec();
       
     }
-    console.log("llll"+services)
+   
     res.status(200).send(services);
 
   } catch (error) {
