@@ -2,25 +2,26 @@ const Category = require('../models/catagoriesModel');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
+const vendorsByTopCategories = require('./dummyData');
 
 
-const catagoriesRegistration = asyncHandler(async(req,res)=>{
+const catagoriesRegistration = asyncHandler(async (req, res) => {
   console.log(req.user.email)
-    const { catagories, services,description, price } = req.body;
-    const serviceProvider1 = await ServiceProvider.findOne({serviceProviderEmalId:req.user.email});
-    console.log(serviceProvider1)
-   // const serviceProvider= req.user._id;
+  const { catagories, services, description, price } = req.body;
+  const serviceProvider1 = await ServiceProvider.findOne({ serviceProviderEmalId: req.user.email });
+  console.log(serviceProvider1)
+  // const serviceProvider= req.user._id;
   //  const serviceProviderId = serviceProvider.toString();
-    console.log(serviceProvider1.serviceProviderName)
-    const existingCategory = await Category.findOne({catagories });
-    
-    let categoryId;
-    if (existingCategory) {
-      // If the category exists, retrieve its ID
-      categoryId = existingCategory._id;
-      console.log(categoryId);
-    } else {
-      const newCategory = await Category.create({ catagories: catagories });
+  console.log(serviceProvider1.serviceProviderName)
+  const existingCategory = await Category.findOne({ catagories });
+
+  let categoryId;
+  if (existingCategory) {
+    // If the category exists, retrieve its ID
+    categoryId = existingCategory._id;
+    console.log(categoryId);
+  } else {
+    const newCategory = await Category.create({ catagories: catagories });
     categoryId = newCategory._id;
   }
   const service = await new Services({
@@ -54,8 +55,8 @@ const searchCatagories = asyncHandler(async (req, res) => {
 
     if (!search) {
       service = await Category.find()
-      .exec();
-        
+        .exec();
+
     }
     else {
       const regexSearch = new RegExp(search, "i");
@@ -65,11 +66,12 @@ const searchCatagories = asyncHandler(async (req, res) => {
 
     }
     res.status(200).send(service);
-  } catch(error) {
+  } catch (error) {
     console.error("Error occurred:", error);
     res.status(400).json({ message: 'Error in searching categories', error: error.message });
   }
 });
+
 const searchService = asyncHandler(async (req, res) => {
   const { catagories } = req.query;
   console.log(catagories);
@@ -85,10 +87,10 @@ const searchService = asyncHandler(async (req, res) => {
         .populate({
           path: "serviceProviderId",
           model: "ServiceProvider",
-         populate: {
-          path: "location", // Populate the location details within serviceProviderId
-          model: "Location",
-                  },
+          populate: {
+            path: "location", // Populate the location details within serviceProviderId
+            model: "Location",
+          },
         })
         .exec();
     } else {
@@ -106,7 +108,7 @@ const searchService = asyncHandler(async (req, res) => {
           { serviceProviderEmalId: regexSearch }
         ],
       }).select('_id');
-      console.log("serviceProviderId" + serviceProvider,regexSearch);
+      console.log("serviceProviderId" + serviceProvider, regexSearch);
 
       services = await Services.find({
         $or: [
@@ -115,9 +117,9 @@ const searchService = asyncHandler(async (req, res) => {
           { catagories: { $in: categories } },
         ],
       }).populate({
-          path: "catagories",
-          model: "Category",
-        })
+        path: "catagories",
+        model: "Category",
+      })
         .populate({
           path: "serviceProviderId",
           model: "ServiceProvider",
@@ -127,9 +129,9 @@ const searchService = asyncHandler(async (req, res) => {
           },
         })
         .exec();
-      
+
     }
-    console.log("llll"+services)
+    console.log("llll" + services)
     res.status(200).send(services);
 
   } catch (error) {
@@ -242,39 +244,29 @@ const ProviderDetails = asyncHandler(async (req, res) => {
 });
 
 
-const addEmployee = asyncHandler(async(req,res)=>{
-      const loginid=req.user.email;
-     
-      const {employeeId} = req.body
-      console.log("loggedIn serviceProvider"+loginid)
-      if (req.user._id){
-        const service = await ServiceProvider.findOne({serviceProviderEmalId:loginid})
-        if (service) {
-          const workingAs = service.workingAs; // Access the workingAs field from the first element of the array
-          console.log(workingAs);
-    
-          if (workingAs === "vendor") {
-          
-            const employee = await ServiceProvider.find({_id:employeeId})
-             console.log("arpit")
-            if (employee){
-              const workingAsForEmployee = employee[0].workingAs;
-              console.log(workingAsForEmployee)
-              if (workingAsForEmployee == "freelancer")
-              console.log("freelancer")
-              service.employeeData.push(employee[0]._id)
-              await service.save();
-              res.status(200).send("employee added sucessfully.")
-            }
-            else {
-            res.status(400).send("Employee working as other than freelancer.");
-          }
-            
-          }
-          else{
-            res.status(400).send("Employee working as other than freelancer.");
-          }
+const addEmployee = asyncHandler(async (req, res) => {
+  const loginid = req.user.email;
 
+  const { employeeId } = req.body
+  console.log("loggedIn serviceProvider" + loginid)
+  if (req.user._id) {
+    const service = await ServiceProvider.findOne({ serviceProviderEmalId: loginid })
+    if (service) {
+      const workingAs = service.workingAs; // Access the workingAs field from the first element of the array
+      console.log(workingAs);
+
+      if (workingAs === "vendor") {
+
+        const employee = await ServiceProvider.find({ _id: employeeId })
+        console.log("arpit")
+        if (employee) {
+          const workingAsForEmployee = employee[0].workingAs;
+          console.log(workingAsForEmployee)
+          if (workingAsForEmployee == "freelancer")
+            console.log("freelancer")
+          service.employeeData.push(employee[0]._id)
+          await service.save();
+          res.status(200).send("employee added sucessfully.")
         }
         else {
           res.status(400).send("Employee working as other than freelancer.");
@@ -284,27 +276,37 @@ const addEmployee = asyncHandler(async(req,res)=>{
       else {
         res.status(400).send("Employee working as other than freelancer.");
       }
+
     }
-    
+    else {
+      res.status(400).send("Employee working as other than freelancer.");
+    }
+
+  }
+  else {
+    res.status(400).send("Employee working as other than freelancer.");
+  }
+}
+
 );
 
 
- const searchFreelancer = asyncHandler(async(req,res)=>{
-  const loginid=req.user.email;
+const searchFreelancer = asyncHandler(async (req, res) => {
+  const loginid = req.user.email;
   console.log(loginid)
-  const {search} = req.query;
+  const { search } = req.query;
   let freelancerSearch;
- 
-  if (req.user._id){
-    const service = await ServiceProvider.find({serviceProviderEmalId:loginid})
-    
-    
+
+  if (req.user._id) {
+    const service = await ServiceProvider.find({ serviceProviderEmalId: loginid })
+
+
 
     if (service.length > 0) {
-      console.log("inseide"+service.length)
+      console.log("inseide" + service.length)
       const workingAs = service[0].workingAs; // Access the workingAs field from the first element of the array
-      
-       if (workingAs == "vendor") {
+
+      if (workingAs == "vendor") {
         if (!search) {
 
           freelancerSearch = await ServiceProvider.find({ workingAs: "freelancer" })
@@ -318,7 +320,7 @@ const addEmployee = asyncHandler(async(req,res)=>{
             ],
 
             workingAs: { $in: ["freelancer", "Freelancer"] }
-            
+
 
           })
 
@@ -335,8 +337,10 @@ const addEmployee = asyncHandler(async(req,res)=>{
 });
 
 
+const getVendorsByTopCategories = async (req, res) => {
+  res.json(vendorsByTopCategories)
+}
 
 
 
-
-module.exports = { searchCatagories, catagoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer };
+module.exports = { searchCatagories, catagoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories };

@@ -5,6 +5,9 @@ const dbConnect = require('./config/dbConnect');
 const errorHandler = require('./middleware/errorHandler');
 const vendorRouter = require('./Routes/vendorRouter');
 const userRouter = require('./Routes/userRouter')
+
+const categoriesRoutes = require("./Routes/categoriesRoutes");
+
 const cors = require('cors');
 
 const app = express();
@@ -44,6 +47,7 @@ app.get("/api/getLocation/:lat/:lon", async (req, res) => {
 
 app.use('/api/vendor', vendorRouter);
 app.use('/api/user', userRouter);
+app.use('/api/categories', categoriesRoutes)
 
 app.all(ReqError);
 app.all(BadReq);
