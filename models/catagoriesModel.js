@@ -1,18 +1,28 @@
 const mongoose = require('mongoose');
 const HouseholdWorkCategories = ['plumbing', 'electrician', 'gardening', 'cleaning', 'painting'];
 const categorySchema = new mongoose.Schema({
-    catagories:{
+    catagories: {
         type: String,
         enum: HouseholdWorkCategories,
-        required: true,
-         
-       },
-       images:{
-        type: String,
-        default:"https://img.freepik.com/premium-photo/repairman-holds-screwdriver-suitcase-tools-kitchen-looks-camera_353017-487.jpg?w=740"
+        required: false,
 
-       }
-  });
-  
-  const Category = mongoose.model('Category', categorySchema);
-  module.exports = Category;
+    },
+    images: {
+        type: String,
+        default: "https://img.freepik.com/premium-photo/repairman-holds-screwdriver-suitcase-tools-kitchen-looks-camera_353017-487.jpg?w=740"
+
+    },
+    name: {
+        type: String,
+        required: true,
+    },
+    value: {
+        type: String,
+    },
+    image: {
+        type: String,
+    }
+});
+
+const Category = mongoose.model('Category', categorySchema);
+module.exports = Category;
