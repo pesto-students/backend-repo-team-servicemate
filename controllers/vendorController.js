@@ -105,7 +105,8 @@ const searchService = asyncHandler(async (req, res) => {
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
-          { serviceProviderEmalId: regexSearch }
+          { serviceProviderEmalId: regexSearch },         
+   //       { price: { $gte: parseFloat(price), $lte: parseFloat(price) } },
         ],
       }).select('_id');
       console.log("serviceProviderId" + serviceProvider, regexSearch);
@@ -115,6 +116,7 @@ const searchService = asyncHandler(async (req, res) => {
           { services: regexSearch },
           { serviceProviderId: { $in: serviceProvider } },
           { catagories: { $in: categories } },
+ 
         ],
       }).populate({
         path: "catagories",
@@ -131,7 +133,6 @@ const searchService = asyncHandler(async (req, res) => {
         .exec();
 
     }
-    console.log("llll" + services)
     res.status(200).send(services);
 
   } catch (error) {
