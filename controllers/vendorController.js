@@ -2,7 +2,7 @@ const Category = require('../models/catagoriesModel');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
-const vendorsByTopCategories = require('./dummyData');
+// const vendorsByTopCategories = require('./dummyData');
 
 
 const catagoriesRegistration = asyncHandler(async (req, res) => {
@@ -103,7 +103,8 @@ const searchService = asyncHandler(async (req, res) => {
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
-          { serviceProviderEmalId: regexSearch }
+          { serviceProviderEmalId: regexSearch },
+          //       { price: { $gte: parseFloat(price), $lte: parseFloat(price) } },
         ],
       }).select('_id');
       console.log("serviceProviderId" + serviceProvider, regexSearch);
@@ -129,7 +130,6 @@ const searchService = asyncHandler(async (req, res) => {
         .exec();
 
     }
-    console.log("llll" + services)
     res.status(200).send(services);
 
   } catch (error) {
