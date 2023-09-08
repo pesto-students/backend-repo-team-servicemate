@@ -1,5 +1,5 @@
 const expressAsyncHandler = require("express-async-handler")
-const Category = require("../models/catagoriesModel")
+const Category = require("../models/categoriesModel")
 const { cloudinary } = require("../config/cloudinary")
 
 const getTopCategories = expressAsyncHandler(async (req, res) => {
@@ -39,4 +39,45 @@ const uploadImage = async (file, callback) => {
     return cloudinary.uploader.upload_stream({ resource_type: 'auto', folder: 'service-mate' }, callback).end(file.buffer);
 }
 
-module.exports = { getTopCategories, addCategory }
+const updateCategory = expressAsyncHandler(async (req, res) => {
+    const { name, id, image } = req.body
+    const file = req.file;
+    if (!image && !file) {
+        return res.status(400).json({ message: 'Please upload an image' });
+    }
+    try {
+        const payload = {}
+        const categoryData = await Category.findById(id)
+        if (name !== categoryData.toObject().name) {
+            payload.name = name
+        }
+        if (file) {
+            uploadImage(file, async (err, result) => {
+                payload.image = result.secure_url
+                const responseFromUpdate = await categoryData.updateOne(payload)
+                res.json({ message: "Data updated successfully", data: responseFromUpdate })
+            })
+        }
+        else if (Object.keys(payload).length) {
+            const responseFromUpdate = await categoryData.updateOne(payload)
+            res.json({ message: "Data updated successfully", data: responseFromUpdate })
+        }
+    }
+    catch (error) {
+        res.status(500).json({ message: error })
+    }
+})
+
+const deleteCategory = expressAsyncHandler(async (req, res) => {
+    const { id } = req.params
+    try {
+        const response = await Category.findByIdAndDelete(id)
+        console.log("🚀 ~ file: categoriesController.js:49 ~ deleteCategory ~ response:", response)
+        res.json({ message: "Delete successfully: " + id })
+    }
+    catch (error) {
+        res.status(500).json({ message: error })
+    }
+})
+
+module.exports = { getTopCategories, addCategory, updateCategory, deleteCategory }

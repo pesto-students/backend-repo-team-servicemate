@@ -1,31 +1,29 @@
-const Category = require('../models/catagoriesModel');
+const Category = require('../models/categoriesModel');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
-const vendorsByTopCategories = require('./dummyData');
+// const vendorsByTopCategories = require('./dummyData');
 
 
-const catagoriesRegistration = asyncHandler(async (req, res) => {
+const categoriesRegistration = asyncHandler(async (req, res) => {
   console.log(req.user.email)
-  const { catagories, services, description, price } = req.body;
+  const { categoryName, services, description, price } = req.body;
   const serviceProvider1 = await ServiceProvider.findOne({ serviceProviderEmalId: req.user.email });
   console.log(serviceProvider1)
   // const serviceProvider= req.user._id;
   //  const serviceProviderId = serviceProvider.toString();
   console.log(serviceProvider1.serviceProviderName)
-  const existingCategory = await Category.findOne({ catagories });
+  const existingCategory = await Category.findOne({ name: categoryName });
 
-  let categoryId;
-  if (existingCategory) {
-    // If the category exists, retrieve its ID
-    categoryId = existingCategory._id;
-    console.log(categoryId);
-  } else {
-    const newCategory = await Category.create({ catagories: catagories });
-    categoryId = newCategory._id;
-  }
+  let categoryId = existingCategory._id
+  // if (existingCategory) {
+  // If the category exists, retrieve its ID
+  // } else {
+  // const newCategory = await Category.create({ name: categories,value:categories.trim().toLowerCase() });
+  // categoryId = newCategory._id;
+  // }
   const service = await new Services({
-    catagories: categoryId,
+    categories: categoryId,
     services: services,
     description: description,
     serviceProvider: serviceProvider1.serviceProviderName,
@@ -61,7 +59,7 @@ const searchCatagories = asyncHandler(async (req, res) => {
     else {
       const regexSearch = new RegExp(search, "i");
       console.log(regexSearch);
-      service = await Category.find({ catagories: regexSearch });
+      service = await Category.find({ name: regexSearch });
       console.log("arpit" + service)
 
     }
@@ -73,15 +71,15 @@ const searchCatagories = asyncHandler(async (req, res) => {
 });
 
 const searchService = asyncHandler(async (req, res) => {
-  const { catagories } = req.query;
-  console.log(catagories);
+  const { category } = req.query;
+  console.log(category);
 
   try {
     let services;
-    if (!catagories || catagories === "all") {
+    if (!category.trim() || category === "all") {
       services = await Services.find()
         .populate({
-          path: "catagories",
+          path: "categories",
           model: "Category",
         })
         .populate({
@@ -94,19 +92,19 @@ const searchService = asyncHandler(async (req, res) => {
         })
         .exec();
     } else {
-      const regexSearch = new RegExp(catagories, "i");
+      const regexSearch = new RegExp(category, "i");
       console.log(regexSearch);
 
       const categories = await Category.find({
-        catagories: regexSearch
+        name: regexSearch
       }).select('_id');
       console.log("catagory" + categories);
 
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
-          { serviceProviderEmalId: regexSearch },         
-   //       { price: { $gte: parseFloat(price), $lte: parseFloat(price) } },
+          { serviceProviderEmalId: regexSearch },
+          //       { price: { $gte: parseFloat(price), $lte: parseFloat(price) } },
         ],
       }).select('_id');
       console.log("serviceProviderId" + serviceProvider, regexSearch);
@@ -115,11 +113,10 @@ const searchService = asyncHandler(async (req, res) => {
         $or: [
           { services: regexSearch },
           { serviceProviderId: { $in: serviceProvider } },
-          { catagories: { $in: categories } },
- 
+          { categories: { $in: categories } },
         ],
       }).populate({
-        path: "catagories",
+        path: "categories",
         model: "Category",
       })
         .populate({
@@ -139,6 +136,7 @@ const searchService = asyncHandler(async (req, res) => {
     res.status(400).json({ message: 'error in searching', error: error.message });
   }
 });
+
 const vendorDetails = asyncHandler(async (req, res) => {
   let newServiceProvider;
   try {
@@ -339,9 +337,75 @@ const searchFreelancer = asyncHandler(async (req, res) => {
 
 
 const getVendorsByTopCategories = async (req, res) => {
-  res.json(vendorsByTopCategories)
+  try {
+    let results = []
+    const topCategories = await Category.find()
+
+
+
+    await Promise.all(topCategories.map(async (category) => {
+
+      // Get the category ID
+      const categoryId = category._id;
+
+      // Find services associated with the category
+      const serviceIds = await Services.find({ categories: categoryId }).select("_id");
+
+      // Get the services IDs from the services
+      // const serviceIds = [...new Set(services.flatMap(service => service._id))];
+
+      // Find vendors that provide the services
+      const vendors = await ServiceProvider.find({ service: { $in: serviceIds } }).populate({ path: "service", model: "Service" })
+      results.push({
+        title: `Top ${category.name} nearby`,
+        data: vendors.map(({ serviceProviderName, profilePic, rating, service, serviceProviderEmalId }) => ({
+          vendorName: serviceProviderName,
+          serviceName: service[0].services?.join(", "),
+          rating,
+          charges: service[0].price,
+          image: profilePic,
+          serviceProviderEmalId
+        }))
+      });
+    }))
+    res.json(results)
+  }
+  catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 }
 
+const updateVendor = asyncHandler(async (req, res) => {
+  const { params, body } = req
+
+  const filter = { key: params.userId };
+
+  const userPayload = {
+    $set: {
+      name: body.name,
+      email: body.email,
+      phoneNo: body.phoneNo,
+    }
+  };
+
+  const vendorPayload = {
+    $set: {
+      name: body.name,
+      workingAs: body.workingAs,
+      email: body.email,
+      phoneNo: body.phoneNo,
+    }
+  };
+  try {
+    const user = await ServiceProvider.updateOne(filter, userPayload)
+    const vendor = await ServiceProvider.updateOne(filter, vendorPayload)
+    res.json({ message: "Profile updated successfully" })
+  } catch (error) {
+    console.error(error);
+  }
+})
 
 
-module.exports = { searchCatagories, catagoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories };
+
+module.exports = { searchCatagories, categoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor };
