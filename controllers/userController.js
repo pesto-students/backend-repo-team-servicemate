@@ -57,7 +57,10 @@ const login = asyncHandler(async (req, res) => {
 
   }
 
-  const newUser = await User.findOne({ email });
+  const newUser = await User.findOne({ email }).populate({
+    path: "address",
+    model: "Location"
+  })
   if (newUser && (await newUser.passwordMatch(password))) {
     res.status(201).json({
       _id: newUser._id,
@@ -66,9 +69,6 @@ const login = asyncHandler(async (req, res) => {
       password: newUser.password,
       address: newUser.address,
       token: generateToken(newUser._id),
-    }).populate({
-      path: "catagories",
-      model: "Location"
     })
 
   } else {

@@ -5,7 +5,7 @@ const { searchCatagories, catagoriesRegistration, vendorDetails, searchService, 
 const router = express.Router();
 
 
-router.route('/catagories').get(searchCatagories);
+router.route('/categories').get(searchCatagories);
 router.route('/serviceSearch').get(searchService);
 router.route('/serviceFreelancers').get(protect, searchFreelancer);
 
