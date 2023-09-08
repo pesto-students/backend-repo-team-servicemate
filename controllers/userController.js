@@ -182,5 +182,4 @@ const addAddress = asyncHandler(async (req, res) => {
   }
 });
 
-
-module.exports = { register, login, appointment, fetchAppointment, addAddress };
+module.exports = { register, login, appointment, fetchAppointment, addAddress, };

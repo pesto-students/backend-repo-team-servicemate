@@ -358,13 +358,13 @@ const getVendorsByTopCategories = async (req, res) => {
       const vendors = await ServiceProvider.find({ service: { $in: serviceIds } }).populate({ path: "service", model: "Service" })
       results.push({
         title: `Top ${category.name} nearby`,
-        data: vendors.map(({ serviceProviderName, profilePic, rating, service }) => ({
+        data: vendors.map(({ serviceProviderName, profilePic, rating, service, serviceProviderEmalId }) => ({
           vendorName: serviceProviderName,
           serviceName: service[0].services?.join(", "),
           rating,
           charges: service[0].price,
           image: profilePic,
-          service
+          serviceProviderEmalId
         }))
       });
     }))
@@ -376,6 +376,36 @@ const getVendorsByTopCategories = async (req, res) => {
   }
 }
 
+const updateVendor = asyncHandler(async (req, res) => {
+  const { params, body } = req
+
+  const filter = { key: params.userId };
+
+  const userPayload = {
+    $set: {
+      name: body.name,
+      email: body.email,
+      phoneNo: body.phoneNo,
+    }
+  };
+
+  const vendorPayload = {
+    $set: {
+      name: body.name,
+      workingAs: body.workingAs,
+      email: body.email,
+      phoneNo: body.phoneNo,
+    }
+  };
+  try {
+    const user = await ServiceProvider.updateOne(filter, userPayload)
+    const vendor = await ServiceProvider.updateOne(filter, vendorPayload)
+    res.json({ message: "Profile updated successfully" })
+  } catch (error) {
+    console.error(error);
+  }
+})
 
 
-module.exports = { searchCatagories, catagoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories };
+
+module.exports = { searchCatagories, catagoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor };
