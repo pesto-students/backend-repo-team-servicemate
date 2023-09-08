@@ -1,4 +1,4 @@
-const Category = require('../models/catagoriesModel');
+const Category = require('../models/categoriesModel');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
@@ -71,15 +71,15 @@ const searchCatagories = asyncHandler(async (req, res) => {
 });
 
 const searchService = asyncHandler(async (req, res) => {
-  const { categories } = req.query;
-  console.log(categories);
+  const { category } = req.query;
+  console.log(category);
 
   try {
     let services;
-    if (!categories || categories === "all") {
+    if (!category.trim() || category === "all") {
       services = await Services.find()
         .populate({
-          path: "name",
+          path: "categories",
           model: "Category",
         })
         .populate({
@@ -92,7 +92,7 @@ const searchService = asyncHandler(async (req, res) => {
         })
         .exec();
     } else {
-      const regexSearch = new RegExp(categories, "i");
+      const regexSearch = new RegExp(category, "i");
       console.log(regexSearch);
 
       const categories = await Category.find({
@@ -136,6 +136,7 @@ const searchService = asyncHandler(async (req, res) => {
     res.status(400).json({ message: 'error in searching', error: error.message });
   }
 });
+
 const vendorDetails = asyncHandler(async (req, res) => {
   let newServiceProvider;
   try {

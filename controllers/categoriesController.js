@@ -1,5 +1,5 @@
 const expressAsyncHandler = require("express-async-handler")
-const Category = require("../models/catagoriesModel")
+const Category = require("../models/categoriesModel")
 const { cloudinary } = require("../config/cloudinary")
 
 const getTopCategories = expressAsyncHandler(async (req, res) => {
