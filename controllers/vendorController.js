@@ -5,7 +5,7 @@ const asyncHandler = require('express-async-handler');
 // const vendorsByTopCategories = require('./dummyData');
 
 
-const catagoriesRegistration = asyncHandler(async (req, res) => {
+const categoriesRegistration = asyncHandler(async (req, res) => {
   console.log(req.user.email)
   const { categoryName, services, description, price } = req.body;
   const serviceProvider1 = await ServiceProvider.findOne({ serviceProviderEmalId: req.user.email });
@@ -408,4 +408,4 @@ const updateVendor = asyncHandler(async (req, res) => {
 
 
 
-module.exports = { searchCatagories, catagoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor };
+module.exports = { searchCatagories, categoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor };
