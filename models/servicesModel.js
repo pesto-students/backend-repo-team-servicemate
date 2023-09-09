@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 
 const serviceSchema = new mongoose.Schema({
-
   categories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category"
@@ -27,8 +26,8 @@ const serviceSchema = new mongoose.Schema({
   charges: {
     type: Number,
     required: true
-  }
-
+  },
+  servicesOffered: [String]
 });
 const Services = mongoose.model("Service", serviceSchema);
 module.exports = Services;

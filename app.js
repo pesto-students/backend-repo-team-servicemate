@@ -3,10 +3,10 @@ const env = require('dotenv');
 const { PageNotFound, BadReq, ReqError } = require('./middleware/errors');
 const dbConnect = require('./config/dbConnect');
 const errorHandler = require('./middleware/errorHandler');
-const vendorRouter = require('./Routes/vendorRouter');
-const userRouter = require('./Routes/userRouter')
+const vendorRouter = require('./routes/vendorRouter');
+const userRouter = require('./routes/userRouter')
 
-const categoriesRoutes = require("./Routes/categoriesRoutes");
+const categoriesRoutes = require("./routes/categoriesRoutes");
 
 const cors = require('cors');
 

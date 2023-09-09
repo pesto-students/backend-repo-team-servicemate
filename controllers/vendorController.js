@@ -3,48 +3,43 @@ const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
+const { createResponse } = require('../utils');
 // const vendorsByTopCategories = require('./dummyData');
 
 
-const categoriesRegistration = asyncHandler(async (req, res) => {
-  console.log(req.user.email)
-  const { categoryName, services, description, charges } = req.body;
-  const serviceProvider1 = await ServiceProvider.findOne({ serviceProviderEmalId: req.user.email });
-  console.log(serviceProvider1)
-  // const serviceProvider= req.user._id;
-  //  const serviceProviderId = serviceProvider.toString();
-  console.log(serviceProvider1.serviceProviderName)
-  const existingCategory = await Category.findOne({ name: categoryName });
+const addService = asyncHandler(async (req, res) => {
+  const { params, body } = req
+  try {
+    const { categories, name, description = '', charges } = body;
+    let serviceToBeUpdated
 
-  let categoryId = existingCategory._id
-  // if (existingCategory) {
-  // If the category exists, retrieve its ID
-  // } else {
-  // const newCategory = await Category.create({ name: categories,value:categories.trim().toLowerCase() });
-  // categoryId = newCategory._id;
-  // }
-  const service = await new Services({
-    categories: categoryId,
-    services: services,
-    description: description,
-    serviceProvider: serviceProvider1.serviceProviderName,
-    serviceProviderId: serviceProvider1._id,
-    charges: charges
+    const existingServices = await Services.findOne({ serviceProviderId: params.vendorId, categories: { $in: [categories._id] } })
+    if (existingServices) {
+      existingServices.servicesOffered.push(name)
+      serviceToBeUpdated = await existingServices.save()
+    }
+    else {
+      const serviceProvider = await ServiceProvider.findOne({ _id: params.vendorId });
+      serviceToBeUpdated = await new Services({
+        categories: [categories._id],
+        description: description,
+        serviceProvider: serviceProvider.serviceProviderName,
+        serviceProviderId: serviceProvider._id,
+        charges: charges
+      });
 
-  });
-
-  await service.save()
-    .then(async (result) => {
-      console.log('Document inserted:', result);
-      serviceProvider1.service.push(result._id);
-      await serviceProvider1.save();
-      res.status(200).json({ message: "Service registered successfully" });
-    })
-    .catch((error) => {
-      console.error('Error inserting document:', error);
-      res.status(500).json({ error: error.message });
-    });
-
+      serviceToBeUpdated.servicesOffered.push(name)
+      await serviceToBeUpdated.save()
+      const result = await (await serviceToBeUpdated.save()).populate({ path: "categories", model: "Category" })
+      serviceProvider.service.push(result._id);
+      await serviceProvider.save();
+    }
+    res.status(200).json({ message: "Service registered successfully", data: serviceToBeUpdated });
+  }
+  catch (error) {
+    console.error('Error inserting document:', error);
+    res.status(500).json({ message: error });
+  }
 })
 
 const searchCatagories = asyncHandler(async (req, res) => {
@@ -145,7 +140,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
       serviceProviderName,
       profilePic,
       serviceProviderEmalId,
-      userType,
+      isVendor,
       phoneNo,
       workingAs,
       employeeData,
@@ -166,7 +161,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
           serviceProviderName,
           profilePic,
           serviceProviderEmalId,
-          userType,
+          isVendor,
           phoneNo,
           workingAs,
           employeeData,
@@ -188,7 +183,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
       newServiceProvider = await ServiceProvider.create({
         serviceProviderName,
         profilePic,
-        userType,
+        isVendor,
         phoneNo,
         workingAs,
         employeeData,
@@ -380,7 +375,7 @@ const getVendorsByTopCategories = async (req, res) => {
 const updateVendor = asyncHandler(async (req, res) => {
   const { params, body } = req
   try {
-    const filter = { _id: params.userId };
+    const filter = { _id: params.vendorId };
 
     const userPayload = {
       $set: {
@@ -398,7 +393,7 @@ const updateVendor = asyncHandler(async (req, res) => {
         phoneNo: body.phoneNo,
       }
     };
-    const oldUser = await User.findOne({ _id: params.userId }).select("email")
+    const oldUser = await User.findOne({ _id: params.vendorId }).select("email")
     const user = await User.findOneAndUpdate(filter, userPayload, { new: true })
     const vendor = await ServiceProvider.findOneAndUpdate({ serviceProviderEmalId: oldUser.email }, vendorPayload, { new: true })
     res.json({ message: "Profile updated successfully", data: { user, vendor } })
@@ -413,9 +408,20 @@ const updateVendorServices = asyncHandler((req, res) => {
 
 })
 
+const getServicesByVendor = asyncHandler(async (req, res) => {
+  const { params } = req
+  try {
+    const services = await Services.find({ serviceProviderId: params.vendorId }).populate({ path: "categories", model: "Category" })
+    res.json(createResponse(services))
+  }
+  catch (error) {
+    res.sendStatus(500).json(createResponse(error, "Couldn't fetch services", true))
+  }
+})
+
 module.exports = {
   searchCatagories,
-  categoriesRegistration,
+  addService,
   searchService,
   vendorDetails,
   ProviderDetails,
@@ -423,5 +429,6 @@ module.exports = {
   searchFreelancer,
   getVendorsByTopCategories,
   updateVendor,
-  updateVendorServices
+  updateVendorServices,
+  getServicesByVendor
 };
