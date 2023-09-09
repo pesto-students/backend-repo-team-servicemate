@@ -1,6 +1,6 @@
 const express = require('express');
 const { protect } = require("../middleware/authMiddleware")
-const { searchCatagories, categoriesRegistration, vendorDetails, searchService, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor } = require('../controllers/vendorController');
+const { searchCatagories, categoriesRegistration, vendorDetails, searchService, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor, updateVendorServices } = require('../controllers/vendorController');
 
 const router = express.Router();
 
@@ -19,6 +19,7 @@ router.route('/vendorsByTopCategories').get(getVendorsByTopCategories)
 
 //put routes
 router.route("/updateVendor/:userId").put(updateVendor)
+router.route("/updateVendorServices/:userId").put(updateVendorServices)
 
 module.exports = router;
 

@@ -2,12 +2,13 @@ const Category = require('../models/categoriesModel');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel');
 // const vendorsByTopCategories = require('./dummyData');
 
 
 const categoriesRegistration = asyncHandler(async (req, res) => {
   console.log(req.user.email)
-  const { categoryName, services, description, price } = req.body;
+  const { categoryName, services, description, charges } = req.body;
   const serviceProvider1 = await ServiceProvider.findOne({ serviceProviderEmalId: req.user.email });
   console.log(serviceProvider1)
   // const serviceProvider= req.user._id;
@@ -28,7 +29,7 @@ const categoriesRegistration = asyncHandler(async (req, res) => {
     description: description,
     serviceProvider: serviceProvider1.serviceProviderName,
     serviceProviderId: serviceProvider1._id,
-    price: price
+    charges: charges
 
   });
 
@@ -104,7 +105,7 @@ const searchService = asyncHandler(async (req, res) => {
         $or: [
           { serviceProviderName: regexSearch },
           { serviceProviderEmalId: regexSearch },
-          //       { price: { $gte: parseFloat(price), $lte: parseFloat(price) } },
+          //       { charges: { $gte: parseFloat(charges), $lte: parseFloat(charges) } },
         ],
       }).select('_id');
       console.log("serviceProviderId" + serviceProvider, regexSearch);
@@ -236,7 +237,7 @@ const ProviderDetails = asyncHandler(async (req, res) => {
     proivderDeatils = await ServiceProvider.find({ service: serviceId })
       .populate({
         path: 'service',
-        select: 'price',
+        select: 'charges',
       });
   }
   res.send(proivderDeatils);
@@ -362,7 +363,7 @@ const getVendorsByTopCategories = async (req, res) => {
           vendorName: serviceProviderName,
           serviceName: service[0].services?.join(", "),
           rating,
-          charges: service[0].price,
+          charges: service[0].charges,
           image: profilePic,
           serviceProviderEmalId
         }))
@@ -378,34 +379,49 @@ const getVendorsByTopCategories = async (req, res) => {
 
 const updateVendor = asyncHandler(async (req, res) => {
   const { params, body } = req
-
-  const filter = { key: params.userId };
-
-  const userPayload = {
-    $set: {
-      name: body.name,
-      email: body.email,
-      phoneNo: body.phoneNo,
-    }
-  };
-
-  const vendorPayload = {
-    $set: {
-      name: body.name,
-      workingAs: body.workingAs,
-      email: body.email,
-      phoneNo: body.phoneNo,
-    }
-  };
   try {
-    const user = await ServiceProvider.updateOne(filter, userPayload)
-    const vendor = await ServiceProvider.updateOne(filter, vendorPayload)
-    res.json({ message: "Profile updated successfully" })
+    const filter = { _id: params.userId };
+
+    const userPayload = {
+      $set: {
+        name: body.name,
+        email: body.email,
+        phoneNo: body.phoneNo,
+      }
+    };
+
+    const vendorPayload = {
+      $set: {
+        serviceProviderName: body.name,
+        workingAs: body.workingAs,
+        serviceProviderEmalId: body.email,
+        phoneNo: body.phoneNo,
+      }
+    };
+    const oldUser = await User.findOne({ _id: params.userId }).select("email")
+    const user = await User.findOneAndUpdate(filter, userPayload, { new: true })
+    const vendor = await ServiceProvider.findOneAndUpdate({ serviceProviderEmalId: oldUser.email }, vendorPayload, { new: true })
+    res.json({ message: "Profile updated successfully", data: { user, vendor } })
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 })
 
+const updateVendorServices = asyncHandler((req, res) => {
+  const { params, body } = req
 
+})
 
-module.exports = { searchCatagories, categoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor };
+module.exports = {
+  searchCatagories,
+  categoriesRegistration,
+  searchService,
+  vendorDetails,
+  ProviderDetails,
+  addEmployee,
+  searchFreelancer,
+  getVendorsByTopCategories,
+  updateVendor,
+  updateVendorServices
+};

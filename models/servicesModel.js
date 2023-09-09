@@ -24,7 +24,7 @@ const serviceSchema = new mongoose.Schema({
     ref: "ServiceProvider",
     required: true
   },
-  price: {
+  charges: {
     type: Number,
     required: true
   }

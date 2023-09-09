@@ -10,7 +10,7 @@ const usecaseSchema = new mongoose.Schema({
     enum: ["plumbing", "electrician", "carpenter"],
     required: true,
   },
-  
+
   usecaseSubtype: {
     type: String,
     required: true,
@@ -21,7 +21,7 @@ const usecaseSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "ServiceProvider",
       },
-      price: {
+      charges: {
         type: Number,
         required: true,
       },
