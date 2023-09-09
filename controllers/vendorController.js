@@ -13,9 +13,12 @@ const categoriesRegistration = asyncHandler(async (req, res) => {
   // const serviceProvider= req.user._id;
   //  const serviceProviderId = serviceProvider.toString();
   console.log(serviceProvider1.serviceProviderName)
-  const existingCategory = await Category.findOne({ name: categoryName });
+  console.log(categoryName)
+  const existingCategory = await Category.findOne({ value: categoryName });
 
   let categoryId = existingCategory._id
+
+  
   // if (existingCategory) {
   // If the category exists, retrieve its ID
   // } else {
@@ -71,12 +74,12 @@ const searchCatagories = asyncHandler(async (req, res) => {
 });
 
 const searchService = asyncHandler(async (req, res) => {
-  const { category } = req.query;
-  console.log(category);
-
+  const { category,price } = req.query;
+  console.log(category,price)
+  console.log((!category || category === "all") && (!price))
   try {
     let services;
-    if (!category.trim() || category === "all") {
+    if ((!category || category === "all") && (!price)) {
       services = await Services.find()
         .populate({
           path: "categories",
@@ -92,28 +95,47 @@ const searchService = asyncHandler(async (req, res) => {
         })
         .exec();
     } else {
+      const filter = {};
+      if (category && category !== "all" ||category) {
+        const regexSearch = new RegExp(category, "i");
+        const categories = await Category.find({ value: regexSearch }).select('_id');
+        console.log(categories)
+        filter.categories ={ $in: categories };
+        console.log(filter.categories)
+        
+      }
+      if (price) {
+        // Handle price filter
+        filter.price = { $lte: parseFloat(price) }; 
+        console.log(filter.price)// Assuming you want services with price less than or equal to the provided price
+      }
       const regexSearch = new RegExp(category, "i");
       console.log(regexSearch);
+      const categories = await Category.find({ value: regexSearch }).select('_id');
 
-      const categories = await Category.find({
-        name: regexSearch
-      }).select('_id');
-      console.log("catagory" + categories);
+     
 
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
           { serviceProviderEmalId: regexSearch },
-          //       { price: { $gte: parseFloat(price), $lte: parseFloat(price) } },
+    
         ],
       }).select('_id');
-      console.log("serviceProviderId" + serviceProvider, regexSearch);
+
+
+   console.log(regexSearch,serviceProvider,filter.categories,filter.price)
 
       services = await Services.find({
         $or: [
           { services: regexSearch },
           { serviceProviderId: { $in: serviceProvider } },
           { categories: { $in: categories } },
+          {price:filter.price}
+        ],
+        $and: [
+          { price: filter.price },
+          { categories: { $in: categories } }
         ],
       }).populate({
         path: "categories",
@@ -128,6 +150,7 @@ const searchService = asyncHandler(async (req, res) => {
           },
         })
         .exec();
+      
 
     }
     res.status(200).send(services);
@@ -400,6 +423,7 @@ const updateVendor = asyncHandler(async (req, res) => {
   try {
     const user = await ServiceProvider.updateOne(filter, userPayload)
     const vendor = await ServiceProvider.updateOne(filter, vendorPayload)
+    console.log(user,vendor)
     res.json({ message: "Profile updated successfully" })
   } catch (error) {
     console.error(error);
