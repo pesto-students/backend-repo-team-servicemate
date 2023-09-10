@@ -31,7 +31,15 @@ const serviceProviderModal = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "ServiceProvider"
   }],
+  freelancers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ServiceProvider"
+  }],
   service: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Services"
+  }],
+  servicesOffered: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Services"
   }],

@@ -287,47 +287,18 @@ const addEmployee = asyncHandler(async (req, res) => {
 
 
 const searchFreelancer = asyncHandler(async (req, res) => {
-  const loginid = req.user.email;
-  console.log(loginid)
-  const { search } = req.query;
-  let freelancerSearch;
-
-  if (req.user._id) {
-    const service = await ServiceProvider.find({ serviceProviderEmalId: loginid })
-
-
-
-    if (service.length > 0) {
-      console.log("inseide" + service.length)
-      const workingAs = service[0].workingAs; // Access the workingAs field from the first element of the array
-
-      if (workingAs == "vendor") {
-        if (!search) {
-
-          freelancerSearch = await ServiceProvider.find({ workingAs: "freelancer" })
-        }
-        else {
-          const regexSearch = new RegExp(search, "i");
-          freelancerSearch = await ServiceProvider.find({
-            $or: [
-              { serviceProviderName: regexSearch },
-              { serviceProviderEmalId: regexSearch }
-            ],
-
-            workingAs: { $in: ["freelancer", "Freelancer"] }
-
-
-          })
-
-          res.status(200).send(freelancerSearch);
-        }
-      }
-      else {
-        res.status(400).send("Service provider is not a vendor.");
-      }
-    } else {
-      res.status(404).send("Service provider not found.");
-    }
+  const { query } = req
+  try {
+    const regexSearch = new RegExp(query.search, "i");
+    const freelancers = await ServiceProvider.find({
+      workingAs: "freelancer", $or: [{
+        serviceProviderName: regexSearch, serviceProviderEmalId: regexSearch
+      }]
+    })
+    res.json(createResponse(freelancers))
+  }
+  catch (error) {
+    res.status(500).json(createResponse(error, undefined, true))
   }
 });
 
@@ -419,6 +390,30 @@ const getServicesByVendor = asyncHandler(async (req, res) => {
   }
 })
 
+const updateFreelancer = asyncHandler(async (req, res) => {
+  const { params, body } = req
+  try {
+    const vendorToBeUpdated = await ServiceProvider.findOne({ _id: params.vendorId })
+    vendorToBeUpdated.freelancers.push(body.freelancerId)
+    vendorToBeUpdated.save()
+    res.json(createResponse(vendorToBeUpdated))
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true))
+  }
+})
+
+const getFreelancersByVendor = asyncHandler(async (req, res) => {
+  const { params } = req
+  try {
+    const freelancers = await ServiceProvider.findOne({ _id: params.vendorId }).select("freelancers").populate({ path: "freelancers", model: 'ServiceProvider' }).populate({
+      path: 'servicesOffered', model: "ServiceProvider"
+    })
+    res.json(createResponse(freelancers.freelancers))
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true))
+  }
+})
+
 module.exports = {
   searchCatagories,
   addService,
@@ -430,5 +425,7 @@ module.exports = {
   getVendorsByTopCategories,
   updateVendor,
   updateVendorServices,
-  getServicesByVendor
+  getServicesByVendor,
+  updateFreelancer,
+  getFreelancersByVendor
 };
