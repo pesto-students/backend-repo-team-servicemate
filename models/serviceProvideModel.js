@@ -97,11 +97,15 @@ const serviceProviderModal = mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ["active", "not active"]
+      enum: ["active", "inactive"]
     }
 
-  }]
-
+  }],
+  vendorStatus: {
+    type: String,
+    enum: ["active", "inactive"],
+    default: 'inactive'
+  }
 });
 
 const ServiceProvider = mongoose.model("ServiceProvider", serviceProviderModal);

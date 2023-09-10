@@ -4,6 +4,7 @@ const generateToken = require('../config/generateToken');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Appointment = require('../models/appointmentBookingModel ');
 const Location = require('../models/locationModel');
+const { createResponse } = require('../utils');
 
 
 const register = asyncHandler(async (req, res) => {
@@ -66,28 +67,34 @@ const loginUser = asyncHandler(async (req, res) => {
   const userPassword = await User.findOne({ email }).select("password")
   if (authUser && (await userPassword.passwordMatch(password))) {
     const { isVendor } = authUser;
-    let responseObject = {
-      _id: authUser._id,
-      name: authUser.name,
-      email: authUser.email,
-      phoneNo: authUser.phoneNo,
-      address: authUser.address,
-      token: generateToken(authUser._id),
-    }
-
-    if (isVendor) {
-      responseObject = {
-        ...responseObject, name: authUser.serviceProviderName, email: authUser.serviceProviderEmalId, workingAs: authUser.workingAs,
-        isVendor: authUser.isVendor,
-      }
-    }
-
-    res.status(200).json(responseObject)
+    res.status(200).json(getLoggedInUserResponseObject(authUser, isVendor, true))
   } else {
-    res.send(400).json({ mesage: "Either email id or password doesn't match" })
+    res.send(400).json(createResponse({ error: "Either email id or password doesn't match" }))
+  }
+});
+
+const getLoggedInUserResponseObject = (authUser, isVendor, isTokenRequired) => {
+  let responseObject = {
+    _id: authUser._id,
+    name: authUser.name,
+    email: authUser.email,
+    phoneNo: authUser.phoneNo,
+    address: authUser.address
   }
 
-});
+  if (isTokenRequired) {
+    responseObject.token = generateToken(authUser._id)
+  }
+
+  if (isVendor) {
+    responseObject = {
+      ...responseObject, name: authUser.serviceProviderName, email: authUser.serviceProviderEmalId, workingAs: authUser.workingAs,
+      isVendor: authUser.isVendor,
+      profilePic: authUser.profilePic
+    }
+  }
+  return responseObject
+}
 
 const appointment = asyncHandler(async (req, res) => {
   const loginUser = req.user;
@@ -193,4 +200,4 @@ const addAddress = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { register, loginUser, appointment, fetchAppointment, addAddress, };
+module.exports = { register, loginUser, appointment, fetchAppointment, addAddress, getLoggedInUserResponseObject };

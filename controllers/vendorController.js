@@ -3,7 +3,8 @@ const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
-const { createResponse } = require('../utils');
+const { createResponse, uploadImageToCloudinary } = require('../utils');
+const { getLoggedInUserResponseObject } = require('./userController');
 // const vendorsByTopCategories = require('./dummyData');
 
 
@@ -364,10 +365,8 @@ const getVendorsByTopCategories = async (req, res) => {
 }
 
 const updateVendor = asyncHandler(async (req, res) => {
-  const { params, body } = req
+  const { params, body, query } = req
   try {
-    const filter = { _id: params.vendorId };
-
     const userPayload = {
       $set: {
         name: body.name,
@@ -384,13 +383,31 @@ const updateVendor = asyncHandler(async (req, res) => {
         phoneNo: body.phoneNo,
       }
     };
-    const oldUser = await User.findOne({ _id: params.vendorId }).select("email")
-    const user = await User.findOneAndUpdate(filter, userPayload, { new: true })
-    const vendor = await ServiceProvider.findOneAndUpdate({ serviceProviderEmalId: oldUser.email }, vendorPayload, { new: true })
-    res.json({ message: "Profile updated successfully", data: { user, vendor } })
+
+    if (req.file) {
+      const result = await uploadImageToCloudinary(req.file)
+      if (result.secure_url) {
+        vendorPayload.$set.profilePic = result.secure_url
+      }
+    }
+
+
+
+    let user = {}
+    let vendor = {}
+    if (query.v === "true" || query.v === true) {
+      const existingUser = await await ServiceProvider.findOne({ _id: params.vendorId }).select("serviceProviderEmalId")
+      vendor = await ServiceProvider.findOneAndUpdate({ _id: params.vendorId }, vendorPayload, { new: true })
+      user = await User.findOneAndUpdate({ email: existingUser.serviceProviderEmalId }, userPayload, { new: true })
+    } else {
+      user = await User.findOneAndUpdate({ _id: params.vendorId }, userPayload)
+    }
+
+    res.json(createResponse(getLoggedInUserResponseObject((query.v === "true" || query.v === true) ? vendor : user, (query.v === "true" || query.v === true))))
+
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json(createResponse(error, undefined, true));
   }
 })
 
