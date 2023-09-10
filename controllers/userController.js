@@ -7,7 +7,7 @@ const Location = require('../models/locationModel');
 
 
 const register = asyncHandler(async (req, res) => {
-  const { name, phoneNo, email, password, isVendor = false, } = req.body;
+  const { name, phoneNo, email, password, isVendor = false, profile } = req.body;
 
   // Check if all required fields are provided
   if (!name || !phoneNo || !email || !password) {
@@ -29,6 +29,7 @@ const register = asyncHandler(async (req, res) => {
     email,
     password,
     isVendor,
+    profile
   });
 
   if (newUser) {

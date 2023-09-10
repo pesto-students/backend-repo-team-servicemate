@@ -7,6 +7,7 @@ const serviceSchema = new mongoose.Schema({
     ref: "Category"
   }],
   services: [String],
+  servicesOffered: [String],
   description: {
     type: String,
 
@@ -27,7 +28,11 @@ const serviceSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  servicesOffered: [String]
+  price: {
+    type: Number,
+    required: true
+  }
+
 });
 const Services = mongoose.model("Service", serviceSchema);
 module.exports = Services;
