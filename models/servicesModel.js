@@ -7,7 +7,7 @@ const serviceSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category"
   }],
-  services: [String],
+  servicesOffered: [String],
   description: {
     type: String,
 
@@ -24,7 +24,7 @@ const serviceSchema = new mongoose.Schema({
     ref: "ServiceProvider",
     required: true
   },
-  price: {
+  charge: {
     type: Number,
     required: true
   }

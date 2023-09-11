@@ -40,17 +40,14 @@ userSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 12);
   }
-
   if (this.userType) {
     const ServiceProvider = mongoose.model('ServiceProvider');
     const serviceProvider = new ServiceProvider({
       serviceProviderName: this.name,
-      serviceProviderEmalId: this.email,
+      email: this.email,
       userType:this.userType,
       phoneNo:this.phoneNo,
       profilePic:this.profile,
-      
-    
     });
 
     await serviceProvider.save();
