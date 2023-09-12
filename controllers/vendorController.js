@@ -96,18 +96,25 @@ const searchService = asyncHandler(async (req, res) => {
         .exec();
     } else {
       const filter = {};
-      if (category && category !== "all" ||category) {
+      if (category && category !== "all") {
         const regexSearch = new RegExp(category, "i");
         const categories = await Category.find({ value: regexSearch }).select('_id');
         console.log(categories)
         filter.categories ={ $in: categories };
         console.log(filter.categories)
       }
-      if (price) {
+      if (price ) {
         // Handle price filter
         filter.price = { $lte: parseFloat(price) }; 
         console.log(filter.price)
       }
+       
+      if (price==='0' ) {
+        console.log("zero")
+        filter.price = { $lte: '0' }; 
+        console.log(filter.price)
+      }
+      
 
       if (!price) {
         // Handle price filter
@@ -133,38 +140,21 @@ const searchService = asyncHandler(async (req, res) => {
    console.log(regexSearch,serviceProvider,filter.categories,filter.price)
 
    services = await Services.find({
-    $or: [
+    $or:[
       {
-        $and: [
-          { servicesOffered: regexSearch },
-          {
             $or: [
+              { servicesOffered: regexSearch },
               { serviceProviderId: { $in: serviceProvider } },
-              { categories: { $in: categories } },
-              { charge: filter.price }
-            ]
-          }
-        ]
-      },
-      {
-        $and: [
-          {
-            $or: [
-              { categories: { $in: categories } },
-              { charge: filter.price }
+    
             ]
           },
-          {
-            $or: [
+          {    
+            $and: [
               { categories: { $in: categories } },
               { charge: filter.price }
             ]
-
-          }
-        ]
-      },
-      
-    ]
+   } 
+  ]     
   }).populate({
         path: "categories",
         model: "Category",
@@ -238,6 +228,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
       newServiceProvider = await ServiceProvider.create({
         serviceProviderName,
         profilePic,
+        email,
         userType,
         phoneNo,
         workingAs,
