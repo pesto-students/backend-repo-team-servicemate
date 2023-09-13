@@ -2,51 +2,44 @@ const Category = require('../models/categoriesModel');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel');
+const { createResponse } = require('../utils');
 // const vendorsByTopCategories = require('./dummyData');
 
 
-const categoriesRegistration = asyncHandler(async (req, res) => {
-  console.log(req.user.email)
-  const { categoryName, services, description, price } = req.body;
-  const serviceProvider1 = await ServiceProvider.findOne({ email: req.user.email });
-  console.log(serviceProvider1)
-  // const serviceProvider= req.user._id;
-  //  const serviceProviderId = serviceProvider.toString();
-  console.log(serviceProvider1.serviceProviderName)
-  console.log(categoryName)
-  const existingCategory = await Category.findOne({ value: categoryName });
+const addService = asyncHandler(async (req, res) => {
+  const { params, body } = req
+  try {
+    const { categories, name, description = '', charges } = body;
+    let serviceToBeUpdated
 
-  let categoryId = existingCategory._id
+    const existingServices = await Services.findOne({ serviceProviderId: params.vendorId, categories: { $in: [categories._id] } })
+    if (existingServices) {
+      existingServices.servicesOffered.push(name)
+      serviceToBeUpdated = await existingServices.save()
+    }
+    else {
+      const serviceProvider = await ServiceProvider.findOne({ _id: params.vendorId });
+      serviceToBeUpdated = await new Services({
+        categories: [categories._id],
+        description: description,
+        serviceProvider: serviceProvider.serviceProviderName,
+        serviceProviderId: serviceProvider._id,
+        charges: charges
+      });
 
-  
-  // if (existingCategory) {
-  // If the category exists, retrieve its ID
-  // } else {
-  // const newCategory = await Category.create({ name: categories,value:categories.trim().toLowerCase() });
-  // categoryId = newCategory._id;
-  // }
-  const service = await new Services({
-    categories: categoryId,
-    servicesOffered: services,
-    description: description,
-    serviceProvider: serviceProvider1.serviceProviderName,
-    serviceProviderId: serviceProvider1._id,
-    charge: price
-
-  });
-
-  await service.save()
-    .then(async (result) => {
-      console.log('Document inserted:', result);
-      serviceProvider1.service.push(result._id);
-      await serviceProvider1.save();
-      res.status(200).json({ message: "Service registered successfully" });
-    })
-    .catch((error) => {
-      console.error('Error inserting document:', error);
-      res.status(500).json({ error: error.message });
-    });
-
+      serviceToBeUpdated.servicesOffered.push(name)
+      await serviceToBeUpdated.save()
+      const result = await (await serviceToBeUpdated.save()).populate({ path: "categories", model: "Category" })
+      serviceProvider.service.push(result._id);
+      await serviceProvider.save();
+    }
+    res.status(200).json({ message: "Service registered successfully", data: serviceToBeUpdated });
+  }
+  catch (error) {
+    console.error('Error inserting document:', error);
+    res.status(500).json({ message: error });
+  }
 })
 
 const searchCatagories = asyncHandler(async (req, res) => {
@@ -74,12 +67,12 @@ const searchCatagories = asyncHandler(async (req, res) => {
 });
 
 const searchService = asyncHandler(async (req, res) => {
-  const { category,price } = req.query;
-  console.log(category,price)
-  console.log((!category || category === "all") && (!price))
+  const { category, price } = req.query;
+  console.log(category);
+
   try {
     let services;
-    if ((!category || category === "all") && (!price)) {
+    if (!category.trim() || category === "all" && !price) {
       services = await Services.find()
         .populate({
           path: "categories",
@@ -100,62 +93,62 @@ const searchService = asyncHandler(async (req, res) => {
         const regexSearch = new RegExp(category, "i");
         const categories = await Category.find({ value: regexSearch }).select('_id');
         console.log(categories)
-        filter.categories ={ $in: categories };
+        filter.categories = { $in: categories };
         console.log(filter.categories)
       }
-      if (price ) {
+      if (price) {
         // Handle price filter
-        filter.price = { $lte: parseFloat(price) }; 
+        filter.price = { $lte: parseFloat(price) };
         console.log(filter.price)
       }
-       
-      if (price==='0' ) {
+
+      if (price === '0') {
         console.log("zero")
-        filter.price = { $lte: '0' }; 
+        filter.price = { $lte: '0' };
         console.log(filter.price)
       }
-      
+
 
       if (!price) {
         // Handle price filter
-        filter.price = { $lte: 2000 }; 
+        filter.price = { $lte: 2000 };
         console.log(filter.price)// Assuming you want services with price less than or equal to the provided price
       }
-      
+
       const regexSearch = new RegExp(category, "i");
       console.log(regexSearch);
       const categories = await Category.find({ value: regexSearch }).select('_id');
 
-     
+
 
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
           { email: regexSearch },
-    
+
         ],
       }).select('_id');
 
 
-   console.log(regexSearch,serviceProvider,filter.categories,filter.price)
+      console.log(regexSearch, serviceProvider, filter.categories, filter.price)
 
-   services = await Services.find({
-    $or:[
-      {
+      services = await Services.find({
+        $or: [
+          {
             $or: [
               { servicesOffered: regexSearch },
               { serviceProviderId: { $in: serviceProvider } },
-    
+
             ]
           },
-          {    
+          {
             $and: [
               { categories: { $in: categories } },
               { charge: filter.price }
             ]
-   } 
-  ]     
-  }).populate({
+          }
+        ]
+      }).populate({
         path: "categories",
         model: "Category",
       })
@@ -168,7 +161,8 @@ const searchService = asyncHandler(async (req, res) => {
           },
         })
         .exec();
-      
+
+
 
     }
     res.status(200).send(services);
@@ -184,8 +178,8 @@ const vendorDetails = asyncHandler(async (req, res) => {
     const {
       serviceProviderName,
       profilePic,
-      email,
-      userType,
+      serviceProviderEmalId,
+      isVendor,
       phoneNo,
       workingAs,
       employeeData,
@@ -205,8 +199,8 @@ const vendorDetails = asyncHandler(async (req, res) => {
         $set: {
           serviceProviderName,
           profilePic,
-          email,
-          userType,
+          serviceProviderEmalId,
+          isVendor,
           phoneNo,
           workingAs,
           employeeData,
@@ -228,8 +222,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
       newServiceProvider = await ServiceProvider.create({
         serviceProviderName,
         profilePic,
-        email,
-        userType,
+        isVendor,
         phoneNo,
         workingAs,
         employeeData,
@@ -278,7 +271,7 @@ const ProviderDetails = asyncHandler(async (req, res) => {
     proivderDeatils = await ServiceProvider.find({ service: serviceId })
       .populate({
         path: 'service',
-        select: 'price',
+        select: 'charges',
       });
   }
   res.send(proivderDeatils);
@@ -333,47 +326,18 @@ const addEmployee = asyncHandler(async (req, res) => {
 
 
 const searchFreelancer = asyncHandler(async (req, res) => {
-  const loginid = req.user.email;
-  console.log(loginid)
-  const { search } = req.query;
-  let freelancerSearch;
-
-  if (req.user._id) {
-    const service = await ServiceProvider.find({ email: loginid })
-
-
-
-    if (service.length > 0) {
-      console.log("inseide" + service.length)
-      const workingAs = service[0].workingAs; // Access the workingAs field from the first element of the array
-
-      if (workingAs == "vendor") {
-        if (!search) {
-
-          freelancerSearch = await ServiceProvider.find({ workingAs: "freelancer" })
-        }
-        else {
-          const regexSearch = new RegExp(search, "i");
-          freelancerSearch = await ServiceProvider.find({
-            $or: [
-              { serviceProviderName: regexSearch },
-              { email: regexSearch }
-            ],
-
-            workingAs: { $in: ["freelancer", "Freelancer"] }
-
-
-          })
-
-          res.status(200).send(freelancerSearch);
-        }
-      }
-      else {
-        res.status(400).send("Service provider is not a vendor.");
-      }
-    } else {
-      res.status(404).send("Service provider not found.");
-    }
+  const { query } = req
+  try {
+    const regexSearch = new RegExp(query.search, "i");
+    const freelancers = await ServiceProvider.find({
+      workingAs: "freelancer", $or: [{
+        serviceProviderName: regexSearch, serviceProviderEmalId: regexSearch
+      }]
+    })
+    res.json(createResponse(freelancers))
+  }
+  catch (error) {
+    res.status(500).json(createResponse(error, undefined, true))
   }
 });
 
@@ -404,7 +368,7 @@ const getVendorsByTopCategories = async (req, res) => {
           vendorName: serviceProviderName,
           serviceName: service[0].servicesOffered?.join(", "),
           rating,
-          charges: service[0].price,
+          charges: service[0].charges,
           image: profilePic,
           email
         }))
@@ -420,35 +384,87 @@ const getVendorsByTopCategories = async (req, res) => {
 
 const updateVendor = asyncHandler(async (req, res) => {
   const { params, body } = req
-
-  const filter = { key: params.userId };
-
-  const userPayload = {
-    $set: {
-      name: body.name,
-      email: body.email,
-      phoneNo: body.phoneNo,
-    }
-  };
-
-  const vendorPayload = {
-    $set: {
-      name: body.name,
-      workingAs: body.workingAs,
-      email: body.email,
-      phoneNo: body.phoneNo,
-    }
-  };
   try {
-    const user = await ServiceProvider.updateOne(filter, userPayload)
-    const vendor = await ServiceProvider.updateOne(filter, vendorPayload)
-    console.log(user,vendor)
-    res.json({ message: "Profile updated successfully" })
+    const filter = { _id: params.vendorId };
+
+    const userPayload = {
+      $set: {
+        name: body.name,
+        email: body.email,
+        phoneNo: body.phoneNo,
+      }
+    };
+
+    const vendorPayload = {
+      $set: {
+        serviceProviderName: body.name,
+        workingAs: body.workingAs,
+        serviceProviderEmalId: body.email,
+        phoneNo: body.phoneNo,
+      }
+    };
+    const oldUser = await User.findOne({ _id: params.vendorId }).select("email")
+    const user = await User.findOneAndUpdate(filter, userPayload, { new: true })
+    const vendor = await ServiceProvider.findOneAndUpdate({ serviceProviderEmalId: oldUser.email }, vendorPayload, { new: true })
+    res.json({ message: "Profile updated successfully", data: { user, vendor } })
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 })
 
+const updateVendorServices = asyncHandler((req, res) => {
+  const { params, body } = req
 
+})
 
-module.exports = { searchCatagories, categoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor };
+const getServicesByVendor = asyncHandler(async (req, res) => {
+  const { params } = req
+  try {
+    const services = await Services.find({ serviceProviderId: params.vendorId }).populate({ path: "categories", model: "Category" })
+    res.json(createResponse(services))
+  }
+  catch (error) {
+    res.sendStatus(500).json(createResponse(error, "Couldn't fetch services", true))
+  }
+})
+
+const updateFreelancer = asyncHandler(async (req, res) => {
+  const { params, body } = req
+  try {
+    const vendorToBeUpdated = await ServiceProvider.findOne({ _id: params.vendorId })
+    vendorToBeUpdated.freelancers.push(body.freelancerId)
+    vendorToBeUpdated.save()
+    res.json(createResponse(vendorToBeUpdated))
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true))
+  }
+})
+
+const getFreelancersByVendor = asyncHandler(async (req, res) => {
+  const { params } = req
+  try {
+    const freelancers = await ServiceProvider.findOne({ _id: params.vendorId }).select("freelancers").populate({ path: "freelancers", model: 'ServiceProvider' }).populate({
+      path: 'servicesOffered', model: "ServiceProvider"
+    })
+    res.json(createResponse(freelancers.freelancers))
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true))
+  }
+})
+
+module.exports = {
+  searchCatagories,
+  addService,
+  searchService,
+  vendorDetails,
+  ProviderDetails,
+  addEmployee,
+  searchFreelancer,
+  getVendorsByTopCategories,
+  updateVendor,
+  updateVendorServices,
+  getServicesByVendor,
+  updateFreelancer,
+  getFreelancersByVendor
+};

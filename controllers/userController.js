@@ -7,7 +7,7 @@ const Location = require('../models/locationModel');
 
 
 const register = asyncHandler(async (req, res) => {
-  const { name, phoneNo, email, password, userType = false,profile } = req.body;
+  const { name, phoneNo, email, password, isVendor = false, profile } = req.body;
 
   // Check if all required fields are provided
   if (!name || !phoneNo || !email || !password) {
@@ -28,8 +28,8 @@ const register = asyncHandler(async (req, res) => {
     phoneNo,
     email,
     password,
-    userType,
-    profile,
+    isVendor,
+    profile
   });
 
   if (newUser) {
@@ -38,7 +38,7 @@ const register = asyncHandler(async (req, res) => {
       name: newUser.name,
       phoneNo: newUser.phoneNo,
       email: newUser.email,
-      userType: newUser.userType,
+      isVendor: newUser.isVendor,
       address: newUser.address,
       profile: newUser.profile,
       token: generateToken(newUser._id),
@@ -49,32 +49,42 @@ const register = asyncHandler(async (req, res) => {
   }
 });
 
-const login = asyncHandler(async (req, res) => {
+const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  console.log(email, password);
   if (!email || !password) {
     res.status(400);
     throw new Error("please enter details correctly login");
-
   }
-
-  const newUser = await User.findOne({ email }).populate({
-    path: "address",
-    model: "Location"
-  })
-  if (newUser && (await newUser.passwordMatch(password))) {
-    res.status(201).json({
-      _id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      password: newUser.password,
-      address: newUser.address,
-      token: generateToken(newUser._id),
+  let authUser
+  authUser = await ServiceProvider.findOne({ serviceProviderEmalId: email }).populate({ path: 'location', model: "Location" });
+  if (!authUser) {
+    authUser = await User.findOne({ email }).populate({
+      path: "address",
+      model: "Location"
     })
+  }
+  const userPassword = await User.findOne({ email }).select("password")
+  if (authUser && (await userPassword.passwordMatch(password))) {
+    const { isVendor } = authUser;
+    let responseObject = {
+      _id: authUser._id,
+      name: authUser.name,
+      email: authUser.email,
+      phoneNo: authUser.phoneNo,
+      address: authUser.address,
+      token: generateToken(authUser._id),
+    }
 
+    if (isVendor) {
+      responseObject = {
+        ...responseObject, name: authUser.serviceProviderName, email: authUser.serviceProviderEmalId, workingAs: authUser.workingAs,
+        isVendor: authUser.isVendor,
+      }
+    }
+
+    res.status(200).json(responseObject)
   } else {
-    res.send(400).json("mesage:error happend")
-
+    res.send(400).json({ mesage: "Either email id or password doesn't match" })
   }
 
 });
@@ -83,7 +93,7 @@ const appointment = asyncHandler(async (req, res) => {
   const loginUser = req.user;
   console.log("login user if" + loginUser._id)
 
-  const { serviceProviderId, service, time,userStreet,userCity,userState,userPostalCode,userCountry, appointmentDate } = req.body;
+  const { serviceProviderId, service, time, userStreet, userCity, userState, userPostalCode, userCountry, appointmentDate } = req.body;
 
   const serv = await ServiceProvider.findOne({ _id: serviceProviderId });
 
@@ -159,7 +169,7 @@ const addAddress = asyncHandler(async (req, res) => {
 
         const UserDetail = await User.findOne({ email: loginUserId });
 
-        if (UserDetail.userType === false) {
+        if (UserDetail.isVendor === false) {
 
           UserDetail.address.push(location._id)
           console.log("userDetails" + UserDetail)
@@ -168,9 +178,9 @@ const addAddress = asyncHandler(async (req, res) => {
         }
 
 
-        const serviceProvider = await ServiceProvider.findOne({ email: loginUserId });
-        console.log(serviceProvider.email == loginUserId)
-        if (serviceProvider.userType === true) {
+        const serviceProvider = await ServiceProvider.findOne({ serviceProviderEmalId: loginUserId });
+        console.log(serviceProvider.serviceProviderEmalId == loginUserId)
+        if (serviceProvider.isVendor === true) {
           serviceProvider.location.push(location._id)
 
           await serviceProvider.save();
@@ -189,4 +199,4 @@ const addAddress = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { register, login, appointment, fetchAppointment, addAddress, };
+module.exports = { register, loginUser, appointment, fetchAppointment, addAddress, };
