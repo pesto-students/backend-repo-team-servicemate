@@ -6,6 +6,7 @@ const serviceSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category"
   }],
+  service: [String],
   servicesOffered: [String],
   description: {
     type: String,
@@ -24,6 +25,10 @@ const serviceSchema = new mongoose.Schema({
     required: true
   },
   charges: {
+    type: Number,
+    required: true
+  },
+  price: {
     type: Number,
     required: true
   }

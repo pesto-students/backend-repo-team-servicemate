@@ -35,7 +35,7 @@ const addCategory = expressAsyncHandler(async (req, res) => {
     }
 })
 
-const uploadImage = async (file, callback) => {
+const uploadImage = (file, callback) => {
     return cloudinary.uploader.upload_stream({ resource_type: 'auto', folder: 'service-mate' }, callback).end(file.buffer);
 }
 

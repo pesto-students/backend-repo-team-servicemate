@@ -6,10 +6,11 @@ const locationSchema = new mongoose.Schema({
     street: String,
     city: String,
     state: String,
-    postalCode:String,
-    country: String
+    postalCode: String,
+    country: String,
+    name: String,
   }
- 
+
 });
 
 const Location = mongoose.model('Location', locationSchema);

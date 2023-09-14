@@ -1,7 +1,8 @@
 const express = require('express');
 const { protect } = require("../middleware/authMiddleware")
 const { searchCatagories, addService, vendorDetails, searchService, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor,
-    updateVendorServices, getServicesByVendor, updateFreelancer, getFreelancersByVendor } = require('../controllers/vendorController');
+    updateVendorServices, getServicesByVendor, updateFreelancer, getFreelancersByVendor, updateLocation, updateTimeSlot } = require('../controllers/vendorController');
+const { upload } = require('../config/cloudinary');
 
 const router = express.Router();
 
@@ -20,9 +21,11 @@ router.route("/add-employee").post(protect, addEmployee)
 router.route('/servceProviderDetails').post(ProviderDetails)
 
 //put routes
-router.route("/updateVendor/:vendorId").put(updateVendor)
-router.route("/updateVendorServices/:vendorId").put(updateVendorServices)
+router.route("/updateVendorProfile/:vendorId").put(upload.single('profilePic'), updateVendor)
+router.route("/updateVendorServices/:vendorId").put(upload.single('profilePic'), updateVendorServices)
 router.route("/updateFreelancer/:vendorId").put(updateFreelancer)
+router.route("/updateLocation/:vendorId").put(updateLocation)
+router.route("/updateTimeSlot/:vendorId").put(updateTimeSlot)
 
 module.exports = router;
 
