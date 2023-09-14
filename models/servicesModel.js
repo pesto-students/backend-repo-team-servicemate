@@ -6,7 +6,7 @@ const serviceSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category"
   }],
-  services: [String],
+  service: [String],
   servicesOffered: [String],
   description: {
     type: String,

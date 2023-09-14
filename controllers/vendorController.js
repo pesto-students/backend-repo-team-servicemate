@@ -91,19 +91,32 @@ const searchService = asyncHandler(async (req, res) => {
         .exec();
     } else {
       const filter = {};
-      if (category && category !== "all" || category) {
+      if (category && category !== "all") {
         const regexSearch = new RegExp(category, "i");
         const categories = await Category.find({ value: regexSearch }).select('_id');
         console.log(categories)
         filter.categories = { $in: categories };
         console.log(filter.categories)
-
       }
       if (price) {
         // Handle price filter
         filter.price = { $lte: parseFloat(price) };
+        console.log(filter.price)
+      }
+
+      if (price === '0') {
+        console.log("zero")
+        filter.price = { $lte: '0' };
+        console.log(filter.price)
+      }
+
+
+      if (!price) {
+        // Handle price filter
+        filter.price = { $lte: 2000 };
         console.log(filter.price)// Assuming you want services with price less than or equal to the provided price
       }
+
       const regexSearch = new RegExp(category, "i");
       console.log(regexSearch);
       const categories = await Category.find({ value: regexSearch }).select('_id');
@@ -113,7 +126,7 @@ const searchService = asyncHandler(async (req, res) => {
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
-          { serviceProviderEmalId: regexSearch },
+          { email: regexSearch },
 
         ],
       }).select('_id');
@@ -123,15 +136,20 @@ const searchService = asyncHandler(async (req, res) => {
 
       services = await Services.find({
         $or: [
-          { services: regexSearch },
-          { serviceProviderId: { $in: serviceProvider } },
-          { categories: { $in: categories } },
-          { price: filter.price }
-        ],
-        $and: [
-          { price: filter.price },
-          { categories: { $in: categories } }
-        ],
+          {
+            $or: [
+              { servicesOffered: regexSearch },
+              { serviceProviderId: { $in: serviceProvider } },
+
+            ]
+          },
+          {
+            $and: [
+              { categories: { $in: categories } },
+              { charge: filter.price }
+            ]
+          }
+        ]
       }).populate({
         path: "categories",
         model: "Category",
@@ -175,10 +193,10 @@ const vendorDetails = asyncHandler(async (req, res) => {
       status
     } = req.body;
 
-    const serviceProviderExists = await ServiceProvider.findOne({ serviceProviderEmalId });
+    const serviceProviderExists = await ServiceProvider.findOne({ email });
     console.log(serviceProviderExists)
     if (serviceProviderExists) {
-      newServiceProvider = await ServiceProvider.findOneAndUpdate({ serviceProviderEmalId }, {
+      newServiceProvider = await ServiceProvider.findOneAndUpdate({ email }, {
         $set: {
           serviceProviderName,
           profilePic,
@@ -240,7 +258,7 @@ const ProviderDetails = asyncHandler(async (req, res) => {
   const { serviceId, serviceName } = req.body
   let proivderDeatils
   if (serviceName) {
-    const serviceids = await Services.find({ services: { $in: serviceName } })
+    const serviceids = await Services.find({ servicesOffered: { $in: serviceName } })
     const serviceIdArray = serviceids.map(service => service._id)
 
     console.log(serviceIdArray)
@@ -267,7 +285,7 @@ const addEmployee = asyncHandler(async (req, res) => {
   const { employeeId } = req.body
   console.log("loggedIn serviceProvider" + loginid)
   if (req.user._id) {
-    const service = await ServiceProvider.findOne({ serviceProviderEmalId: loginid })
+    const service = await ServiceProvider.findOne({ email: loginid })
     if (service) {
       const workingAs = service.workingAs; // Access the workingAs field from the first element of the array
       console.log(workingAs);
@@ -347,13 +365,13 @@ const getVendorsByTopCategories = async (req, res) => {
       const vendors = await ServiceProvider.find({ service: { $in: serviceIds } }).populate({ path: "service", model: "Service" })
       results.push({
         title: `Top ${category.name} nearby`,
-        data: vendors.map(({ serviceProviderName, profilePic, rating, service, serviceProviderEmalId }) => ({
+        data: vendors.map(({ serviceProviderName, profilePic, rating, service, email }) => ({
           vendorName: serviceProviderName,
-          serviceName: service[0].services?.join(", "),
+          serviceName: service[0].servicesOffered?.join(", "),
           rating,
           charges: service[0].charges,
           image: profilePic,
-          serviceProviderEmalId
+          email
         }))
       });
     }))

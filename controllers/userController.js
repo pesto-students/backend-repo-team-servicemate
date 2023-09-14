@@ -100,7 +100,7 @@ const appointment = asyncHandler(async (req, res) => {
   const loginUser = req.user;
   console.log("login user if" + loginUser._id)
 
-  const { serviceProviderId, service, time, appointmentDate } = req.body;
+  const { serviceProviderId, service, time, userStreet, userCity, userState, userPostalCode, userCountry, appointmentDate } = req.body;
 
   const serv = await ServiceProvider.findOne({ _id: serviceProviderId });
 
@@ -112,7 +112,13 @@ const appointment = asyncHandler(async (req, res) => {
     service: service,
     userId: loginUser._id,
     userName: loginUser.name,
-    userAddress: loginUser.address,
+    userAddress: {
+      street: userStreet,
+      city: userCity,
+      state: userState,
+      postalCode: userPostalCode,
+      country: userCountry,
+    },
     appointmentDate,
     time,
   });

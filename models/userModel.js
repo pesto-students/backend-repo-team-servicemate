@@ -50,7 +50,6 @@ userSchema.pre('save', async function (next) {
       phoneNo: this.phoneNo,
       profilePic: this.profile,
     });
-
     await serviceProvider.save();
   }
 

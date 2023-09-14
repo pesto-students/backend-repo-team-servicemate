@@ -8,7 +8,6 @@ const serviceProviderModal = mongoose.Schema({
 
   profilePic: {
     type: String,
-
   },
   serviceProviderEmalId: {
     type: String,
