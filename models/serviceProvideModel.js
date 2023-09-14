@@ -25,7 +25,8 @@ const serviceProviderModal = mongoose.Schema({
   },
   workingAs: {
     type: String,
-    enum: ['freelancer', 'vendor', 'vendorEmployee']
+    enum: ['freelancer', 'vendor'],
+    default: "vendor"
   },
   employeeData: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -48,21 +49,22 @@ const serviceProviderModal = mongoose.Schema({
     ref: "Location"
   }],
   openHours: [{
-
-    timeSlot: [{
-      day: [{
-        type: String,
-        required: true
-      }],
-      fromTime: {
-        type: String,
-        required: true
-      },
-      toTime: {
-        type: String,
-        required: true
-      }
-    }]
+    days: [{
+      type: String,
+      required: true
+    }],
+    fromTime: {
+      type: String,
+      required: true
+    },
+    toTime: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    }
   }],
   portfolio: [{
     image: {

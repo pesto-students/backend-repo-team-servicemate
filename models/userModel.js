@@ -49,8 +49,6 @@ userSchema.pre('save', async function (next) {
       isVendor: this.isVendor,
       phoneNo: this.phoneNo,
       profilePic: this.profile,
-
-
     });
 
     await serviceProvider.save();

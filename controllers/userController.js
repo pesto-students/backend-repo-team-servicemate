@@ -35,14 +35,14 @@ const register = asyncHandler(async (req, res) => {
 
   if (newUser) {
     res.status(201).json({
-
+      _id: newUser._id,
       name: newUser.name,
       phoneNo: newUser.phoneNo,
       email: newUser.email,
       isVendor: newUser.isVendor,
       address: newUser.address,
       profile: newUser.profile,
-      token: generateToken(newUser._id),
+      token: generateToken(newUser._id)
     });
   } else {
     res.status(400);
