@@ -3,7 +3,7 @@ const env = require('dotenv');
 const { PageNotFound, BadReq, ReqError } = require('./middleware/errors');
 const dbConnect = require('./config/dbConnect');
 const errorHandler = require('./middleware/errorHandler');
-const vendorRouter = require('/routes/vendorRouter');
+const vendorRouter = require('./routes/vendorRouter');
 const userRouter = require('./routes/userRouter');
 
 const categoriesRoutes = require("./routes/categoriesRoutes");
