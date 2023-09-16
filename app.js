@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require("path")
 const env = require('dotenv');
 const { PageNotFound, BadReq, ReqError } = require('./middleware/errors');
 const dbConnect = require('./config/dbConnect');
@@ -12,6 +13,9 @@ const cors = require('cors');
 
 
 const app = express();
+
+const buildPath = path.join(__dirname, 'build')
+app.use(express.static(buildPath))
 
 app.use(cors())
 app.use(express.json());
