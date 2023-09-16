@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require("path");
 const env = require('dotenv');
 const { PageNotFound, BadReq, ReqError } = require('./middleware/errors');
 const dbConnect = require('./config/dbConnect');
