@@ -1,14 +1,16 @@
 const express = require('express');
+const path = require("path");
 const env = require('dotenv');
 const { PageNotFound, BadReq, ReqError } = require('./middleware/errors');
 const dbConnect = require('./config/dbConnect');
 const errorHandler = require('./middleware/errorHandler');
-const vendorRouter = require('./routes/vendorRouter');
-const userRouter = require('./routes/userRouter')
+const vendorRouter = require('/routes/vendorRouter');
+const userRouter = require('./routes/userRouter');
 
 const categoriesRoutes = require("./routes/categoriesRoutes");
 
 const cors = require('cors');
+
 
 const app = express();
 
