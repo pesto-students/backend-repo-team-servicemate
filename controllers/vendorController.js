@@ -365,13 +365,14 @@ const getVendorsByTopCategories = async (req, res) => {
       const vendors = await ServiceProvider.find({ service: { $in: serviceIds } }).populate({ path: "service", model: "Service" })
       results.push({
         title: `Top ${category.name} nearby`,
-        data: vendors.map(({ serviceProviderName, profilePic, rating, service, email }) => ({
+        data: vendors.map(({ serviceProviderName, profilePic, rating, service, email, _id }) => ({
           vendorName: serviceProviderName,
           serviceName: service[0].servicesOffered?.join(", "),
           rating,
           charges: service[0].charges,
           image: profilePic,
-          email
+          email,
+          _id: _id
         }))
       });
     }))

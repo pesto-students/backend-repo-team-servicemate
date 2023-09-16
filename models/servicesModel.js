@@ -30,7 +30,8 @@ const serviceSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: true
+    required: false,
+    default: 1000
   }
 
 });
