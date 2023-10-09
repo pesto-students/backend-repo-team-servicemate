@@ -1,7 +1,8 @@
 const express = require('express');
 const { protect } = require('../middleware/authMiddleware');
 const { searchCatagories, addService, vendorDetails, searchService, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor,
-    updateVendorServices, getServicesByVendor, updateFreelancer, getFreelancersByVendor, updateLocation, updateTimeSlot } = require('../controllers/vendorController');
+    updateVendorServices, getServicesByVendor, updateFreelancer, getFreelancersByVendor, updateLocation, updateTimeSlot, getMyProfile, deleteVendorAddress,
+    deleteVendorTimeSlot } = require('../controllers/vendorController');
 const { upload } = require('../config/cloudinary');
 
 const router = express.Router();
@@ -13,6 +14,7 @@ router.route('/searchFreelancer').get(searchFreelancer);
 router.route('/vendorsByTopCategories').get(getVendorsByTopCategories);
 router.route('/services/:vendorId').get(getServicesByVendor);
 router.route('/freelancers/:vendorId').get(getFreelancersByVendor);
+router.route('/myProfile/:vendorId').get(getMyProfile);
 
 //post routes
 router.route('/addService/:vendorId').post(addService);
@@ -26,6 +28,11 @@ router.route('/updateVendorServices/:vendorId').put(upload.single('profilePic'),
 router.route('/updateFreelancer/:vendorId').put(updateFreelancer);
 router.route('/updateLocation/:vendorId').put(updateLocation);
 router.route('/updateTimeSlot/:vendorId').put(updateTimeSlot);
+
+
+//delete routes
+router.route('/:vendorId/deleteAddress/:addressId').delete(deleteVendorAddress);
+router.route('/:vendorId/deleteTimeSlot/:slotTimeId').delete(deleteVendorTimeSlot);
 
 module.exports = router;
 
