@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const serviceProviderModal = mongoose.Schema({
+const mongoose = require('mongoose');
+const serviceProviderModal = new mongoose.Schema({
   serviceProviderName: {
     type: String,
     trim: true,
@@ -25,38 +25,38 @@ const serviceProviderModal = mongoose.Schema({
   workingAs: {
     type: String,
     enum: ['freelancer', 'vendor'],
-    default: "vendor"
+    default: 'vendor'
   },
   employeeData: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "ServiceProvider"
+    ref: 'ServiceProvider'
   }],
   freelancers: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "ServiceProvider"
+    ref: 'ServiceProvider'
   }],
   service: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Services"
+    ref: 'Services'
   }],
   servicesOffered: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Services"
+    ref: 'Services'
   }],
   location: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Location"
+    ref: 'Location'
   }],
   openHours: [{
     days: [{
       type: String,
       required: true
     }],
-    fromTime: {
+    from: {
       type: String,
       required: true
     },
-    toTime: {
+    to: {
       type: String,
       required: true
     },
@@ -98,16 +98,16 @@ const serviceProviderModal = mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ["active", "inactive"]
+      enum: ['active', 'inactive']
     }
 
   }],
   vendorStatus: {
     type: String,
-    enum: ["active", "inactive"],
+    enum: ['active', 'inactive'],
     default: 'inactive'
   }
 });
 
-const ServiceProvider = mongoose.model("ServiceProvider", serviceProviderModal);
+const ServiceProvider = mongoose.model('ServiceProvider', serviceProviderModal);
 module.exports = ServiceProvider;
