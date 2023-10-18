@@ -10,24 +10,33 @@ const Location = require('../models/locationModel');
 
 
 const addService = asyncHandler(async (req, res) => {
-  const { params, body } = req;
+  const { params, body, files } = req;
   try {
     const { categories, name, description = '', charges } = body;
     let serviceToBeUpdated;
-
-    const existingServices = await Services.findOne({ serviceProviderId: params.vendorId, categories: { $in: [categories._id] } });
+    const parsedCategories = JSON.parse(categories);
+    const existingServices = await Services.findOne({ serviceProviderId: params.vendorId, categories: { $in: [parsedCategories._id] } });
     if (existingServices) {
       existingServices.servicesOffered.push(name);
       serviceToBeUpdated = await existingServices.save();
     }
     else {
+      let servicePictures = [];
+      if (files?.length) {
+        servicePictures = Promise.all(files.map(async (file) => {
+          const { secure_url } = await uploadImageToCloudinary(file) || {};
+          return secure_url;
+        }));
+      }
+
       const serviceProvider = await ServiceProvider.findOne({ _id: params.vendorId });
-      serviceToBeUpdated = await new Services({
-        categories: [categories._id],
+      serviceToBeUpdated = new Services({
+        categories: [parsedCategories._id],
         description: description,
         serviceProvider: serviceProvider.serviceProviderName,
         serviceProviderId: serviceProvider._id,
-        charges: charges
+        charges: charges,
+        pictures: servicePictures
       });
 
       serviceToBeUpdated.servicesOffered.push(name);
@@ -331,9 +340,18 @@ const searchFreelancer = asyncHandler(async (req, res) => {
   try {
     const regexSearch = new RegExp(query.search, 'i');
     const freelancers = await ServiceProvider.find({
-      workingAs: 'freelancer', $or: [{
-        serviceProviderName: regexSearch, serviceProviderEmalId: regexSearch
-      }]
+      $and: [
+        {
+          workingAs: 'freelancer'
+        },
+        {
+          $or: [{
+            serviceProviderName: { $regex: regexSearch }
+          }, {
+            email: { $regex: regexSearch }
+          }]
+        }
+      ]
     });
     res.json(createResponse(freelancers));
   }

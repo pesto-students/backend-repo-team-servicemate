@@ -17,7 +17,7 @@ router.route('/freelancers/:vendorId').get(getFreelancersByVendor);
 router.route('/myProfile/:vendorId').get(getMyProfile);
 
 //post routes
-router.route('/addService/:vendorId').post(addService);
+router.route('/addService/:vendorId').post(upload.array('file', 5), addService);
 router.route('/detail').post(vendorDetails);
 router.route('/add-employee').post(protect, addEmployee);
 router.route('/serviceProviderDetails').post(ProviderDetails);

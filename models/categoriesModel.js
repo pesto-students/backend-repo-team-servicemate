@@ -5,17 +5,17 @@ const HouseholdWorkCategoriesLabel = ['Plumbing', 'Electrician', 'Gardening', 'C
 const categorySchema = new mongoose.Schema({
     images: {
         type: String,
-        default: "https://img.freepik.com/premium-photo/repairman-holds-screwdriver-suitcase-tools-kitchen-looks-camera_353017-487.jpg?w=740"
+        default: 'https://img.freepik.com/premium-photo/repairman-holds-screwdriver-suitcase-tools-kitchen-looks-camera_353017-487.jpg?w=740'
 
     },
     name: {
         type: String,
-        enum: HouseholdWorkCategoriesLabel,
+        // enum: HouseholdWorkCategoriesLabel,
         required: true,
     },
     value: {
         type: String,
-        enum: HouseholdWorkCategories,
+        // enum: HouseholdWorkCategories,
     },
     image: {
         type: String,
