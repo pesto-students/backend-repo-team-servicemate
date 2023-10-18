@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 
 const serviceSchema = new mongoose.Schema({
   categories: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Category"
+    ref: 'Category'
   }],
   service: [String],
   servicesOffered: [String],
@@ -14,14 +14,14 @@ const serviceSchema = new mongoose.Schema({
   },
   address: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Location",
+    ref: 'Location',
   }],
   serviceProvider: {
     type: String,
   },
   serviceProviderId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "ServiceProvider",
+    ref: 'ServiceProvider',
     required: true
   },
   charges: {
@@ -32,8 +32,11 @@ const serviceSchema = new mongoose.Schema({
     type: Number,
     required: false,
     default: 1000
+  },
+  pictures: {
+    type: [String],
   }
 
 });
-const Services = mongoose.model("Service", serviceSchema);
+const Services = mongoose.model('Service', serviceSchema);
 module.exports = Services;
