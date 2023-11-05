@@ -9,7 +9,7 @@ const serviceProviderModal = new mongoose.Schema({
   profilePic: {
     type: String,
   },
-  serviceProviderEmalId: {
+  serviceProviderEmailId: {
     type: String,
     trim: true,
     required: true
@@ -106,7 +106,14 @@ const serviceProviderModal = new mongoose.Schema({
     type: String,
     enum: ['active', 'inactive'],
     default: 'inactive'
-  }
+  },
+  establishedDate: {
+    type: String
+  },
+  addresses: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Location'
+  }],
 });
 
 const ServiceProvider = mongoose.model('ServiceProvider', serviceProviderModal);

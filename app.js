@@ -9,6 +9,8 @@ const userRouter = require('./routes/userRouter');
 const categoriesRoutes = require('./routes/categoriesRoutes');
 
 const cors = require('cors');
+const expressAsyncHandler = require('express-async-handler');
+const { createResponse } = require('./utils');
 
 
 const app = express();
@@ -42,6 +44,19 @@ app.get('/api/getLocation/:lat/:lon', async (req, res) => {
         res.json({});
     }
 });
+
+app.get('/api/location', expressAsyncHandler(async (req, res) => {
+    const { q, lat, lon } = req.query;
+    let apiUrl;
+    if (q) {
+        apiUrl = `https://api.geoapify.com/v1/geocode/autocomplete?text=${q}&apiKey=${process.env.GEOAPIFY}`;
+    } else if (lat && lon) {
+        apiUrl = `https://geocode.maps.co/reverse?lat=${lat}&lon=${lon}`;
+    }
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    res.json(createResponse(data?.features?.map(f => f.properties) || []));
+}));
 
 //error and errorHandler section
 
