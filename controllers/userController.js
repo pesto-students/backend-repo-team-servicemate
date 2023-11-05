@@ -54,22 +54,22 @@ const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400);
-    throw new Error("please enter details correctly login");
+    throw new Error('please enter details correctly login');
   }
-  let authUser
-  authUser = await ServiceProvider.findOne({ serviceProviderEmalId: email }).populate({ path: 'location', model: "Location" });
+  let authUser;
+  authUser = await ServiceProvider.findOne({ serviceProviderEmailId: email }).populate({ path: 'location', model: 'Location' });
   if (!authUser) {
     authUser = await User.findOne({ email }).populate({
-      path: "address",
-      model: "Location"
-    })
+      path: 'address',
+      model: 'Location'
+    });
   }
-  const userPassword = await User.findOne({ email }).select("password")
+  const userPassword = await User.findOne({ email }).select('password');
   if (authUser && (await userPassword.passwordMatch(password))) {
     const { isVendor } = authUser;
-    res.status(200).json(getLoggedInUserResponseObject(authUser, isVendor, true))
+    res.status(200).json(getLoggedInUserResponseObject(authUser, isVendor, true));
   } else {
-    res.send(400).json(createResponse({ error: "Either email id or password doesn't match" }))
+    res.send(400).json(createResponse({ error: 'Either email id or password doesn\'t match' }));
   }
 });
 
@@ -79,32 +79,33 @@ const getLoggedInUserResponseObject = (authUser, isVendor, isTokenRequired) => {
     name: authUser.name,
     email: authUser.email,
     phoneNo: authUser.phoneNo,
-    address: authUser.address
-  }
+    address: authUser.addresses
+  };
 
   if (isTokenRequired) {
-    responseObject.token = generateToken(authUser._id)
+    responseObject.token = generateToken(authUser._id);
   }
 
   if (isVendor) {
     responseObject = {
-      ...responseObject, name: authUser.serviceProviderName, email: authUser.serviceProviderEmalId, workingAs: authUser.workingAs,
+      ...responseObject, name: authUser.serviceProviderName, email: authUser.serviceProviderEmailId, workingAs: authUser.workingAs,
       isVendor: authUser.isVendor,
-      profilePic: authUser.profilePic
-    }
+      profilePic: authUser.profilePic,
+      establishedDate: authUser.establishedDate
+    };
   }
-  return responseObject
-}
+  return responseObject;
+};
 
 const appointment = asyncHandler(async (req, res) => {
   const loginUser = req.user;
-  console.log("login user if" + loginUser._id)
+  console.log('login user if' + loginUser._id);
 
   const { serviceProviderId, service, time, userStreet, userCity, userState, userPostalCode, userCountry, appointmentDate } = req.body;
 
   const serv = await ServiceProvider.findOne({ _id: serviceProviderId });
 
-  console.log("serviceprovide_id" + serv.phoneNo)
+  console.log('serviceprovide_id' + serv.phoneNo);
   const newAppointment = new Appointment({
     serviceProvider: serv._id,
     serviderProviderName: serv.serviceProviderName,
@@ -128,7 +129,7 @@ const appointment = asyncHandler(async (req, res) => {
     res.status(200).json({ data: appointment });
   }
   else {
-    res.status(500).json({ mesaage: "appointmemt not booked" });
+    res.status(500).json({ mesaage: 'appointmemt not booked' });
   }
 });
 
@@ -136,19 +137,19 @@ const appointment = asyncHandler(async (req, res) => {
 const fetchAppointment = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  console.log(userId)
+  console.log(userId);
   const appointments = await Appointment.find({
     $or: [{ userId: userId },
     { serviceProvider: userId }],
 
   })
-    .populate("serviceProvider")
-    .populate("userId", "-password")
-    .populate("service")
+    .populate('serviceProvider')
+    .populate('userId', '-password')
+    .populate('service')
     .exec();
 
   res.status(200).json({ data: appointments });
-})
+});
 
 const addAddress = asyncHandler(async (req, res) => {
   console.log(req.user._id);
@@ -178,23 +179,23 @@ const addAddress = asyncHandler(async (req, res) => {
 
         if (UserDetail.isVendor === false) {
 
-          UserDetail.address.push(location._id)
-          console.log("userDetails" + UserDetail)
+          UserDetail.address.push(location._id);
+          console.log('userDetails' + UserDetail);
           await UserDetail.save();
-          res.status(200).json({ message: "address added to user" });
+          res.status(200).json({ message: 'address added to user' });
         }
 
 
-        const serviceProvider = await ServiceProvider.findOne({ serviceProviderEmalId: loginUserId });
-        console.log(serviceProvider.serviceProviderEmalId == loginUserId)
+        const serviceProvider = await ServiceProvider.findOne({ serviceProviderEmailId: loginUserId });
+        console.log(serviceProvider.serviceProviderEmailId == loginUserId);
         if (serviceProvider.isVendor === true) {
-          serviceProvider.location.push(location._id)
+          serviceProvider.location.push(location._id);
 
           await serviceProvider.save();
-          res.status(200).json({ message: "Service provider adrees added" });
-          console.log("Service provider adrees added");
+          res.status(200).json({ message: 'Service provider adrees added' });
+          console.log('Service provider adrees added');
         } else {
-          console.log("Service provider not found");
+          console.log('Service provider not found');
         }
 
       }

@@ -188,7 +188,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
     const {
       serviceProviderName,
       profilePic,
-      serviceProviderEmalId,
+      serviceProviderEmailId,
       isVendor,
       phoneNo,
       workingAs,
@@ -209,7 +209,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
         $set: {
           serviceProviderName,
           profilePic,
-          serviceProviderEmalId,
+          serviceProviderEmailId,
           isVendor,
           phoneNo,
           workingAs,
@@ -415,10 +415,11 @@ const updateVendor = asyncHandler(async (req, res) => {
 
     const vendorPayload = {
       $set: {
-        serviceProviderName: body.name,
+        serviceProviderName: body.name || body.serviceProviderName,
         workingAs: body.workingAs,
-        serviceProviderEmalId: body.email,
+        serviceProviderEmailId: body.email || body.serviceProviderEmailId,
         phoneNo: body.phoneNo,
+        establishedDate: body.establishedDate
       }
     };
 
@@ -434,9 +435,9 @@ const updateVendor = asyncHandler(async (req, res) => {
     let user = {};
     let vendor = {};
     if (query.v === 'true' || query.v === true) {
-      const existingUser = await await ServiceProvider.findOne({ _id: params.vendorId }).select('serviceProviderEmalId');
+      const existingUser = await ServiceProvider.findOne({ _id: params.vendorId }).select('serviceProviderEmailId');
       vendor = await ServiceProvider.findOneAndUpdate({ _id: params.vendorId }, vendorPayload, { new: true });
-      user = await User.findOneAndUpdate({ email: existingUser.serviceProviderEmalId }, userPayload, { new: true });
+      user = await User.findOneAndUpdate({ email: existingUser.serviceProviderEmailId }, userPayload, { new: true });
     } else {
       user = await User.findOneAndUpdate({ _id: params.vendorId }, userPayload);
     }
@@ -491,14 +492,14 @@ const getFreelancersByVendor = asyncHandler(async (req, res) => {
 
 const updateLocation = asyncHandler(async (req, res) => {
   const { params, body } = req;
-  const { street, city, state, pinCode, country, name } = body;
+  const { addressLine1, addressLine2, city, state, pinCode, country, name, lat, lon } = body;
   try {
     const vendorToBeUpdated = await ServiceProvider.findOne({ _id: params.vendorId });
     if (body._id) {
-      await Location.findByIdAndUpdate(body._id, { street, city, state, pinCode, country, name });
+      await Location.findByIdAndUpdate(body._id, { addressLine1, addressLine2, city, state, pinCode, country, name, longLat: { type: 'Point', coordinates: [lon, lat] } });
     } else {
       const newLocation = await Location.create({
-        street, city, state, pinCode, country, name
+        addressLine1, addressLine2, city, state, pinCode, country, name, longLat: { type: 'Point', coordinates: [lon, lat] }
       });
       await newLocation.save();
       vendorToBeUpdated.location.push(newLocation._id);

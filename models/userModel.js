@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   address: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Location",
+    ref: 'Location',
   }],
   profile: {
     type: String
@@ -45,7 +45,7 @@ userSchema.pre('save', async function (next) {
     const ServiceProvider = mongoose.model('ServiceProvider');
     const serviceProvider = new ServiceProvider({
       serviceProviderName: this.name,
-      serviceProviderEmalId: this.email,
+      serviceProviderEmailId: this.email,
       isVendor: this.isVendor,
       phoneNo: this.phoneNo,
       profilePic: this.profile,
