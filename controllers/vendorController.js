@@ -2,52 +2,56 @@ const Category = require('../models/categoriesModel');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Services = require('../models/servicesModel');
 const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel');
+const { createResponse, uploadImageToCloudinary } = require('../utils');
+const { getLoggedInUserResponseObject } = require('./userController');
+const Location = require('../models/locationModel');
 // const vendorsByTopCategories = require('./dummyData');
 
 
-const categoriesRegistration = asyncHandler(async (req, res) => {
-  console.log(req.user.email)
-  const { categoryName, services, description, price } = req.body;
-  const serviceProvider1 = await ServiceProvider.findOne({ email: req.user.email });
-  console.log(serviceProvider1)
-  // const serviceProvider= req.user._id;
-  //  const serviceProviderId = serviceProvider.toString();
-  console.log(serviceProvider1.serviceProviderName)
-  console.log(categoryName)
-  const existingCategory = await Category.findOne({ value: categoryName });
+const addService = asyncHandler(async (req, res) => {
+  const { params, body, files } = req;
+  try {
+    const { categories, name, description = '', charges } = body;
+    let serviceToBeUpdated;
+    const parsedCategories = JSON.parse(categories);
+    const existingServices = await Services.findOne({ serviceProviderId: params.vendorId, categories: { $in: [parsedCategories._id] } });
+    if (existingServices) {
+      existingServices.servicesOffered.push(name);
+      serviceToBeUpdated = await existingServices.save();
+    }
+    else {
+      let servicePictures = [];
+      if (files?.length) {
+        servicePictures = Promise.all(files.map(async (file) => {
+          const { secure_url } = await uploadImageToCloudinary(file) || {};
+          return secure_url;
+        }));
+      }
 
-  let categoryId = existingCategory._id
+      const serviceProvider = await ServiceProvider.findOne({ _id: params.vendorId });
+      serviceToBeUpdated = new Services({
+        categories: [parsedCategories._id],
+        description: description,
+        serviceProvider: serviceProvider.serviceProviderName,
+        serviceProviderId: serviceProvider._id,
+        charges: charges,
+        pictures: servicePictures
+      });
 
-  
-  // if (existingCategory) {
-  // If the category exists, retrieve its ID
-  // } else {
-  // const newCategory = await Category.create({ name: categories,value:categories.trim().toLowerCase() });
-  // categoryId = newCategory._id;
-  // }
-  const service = await new Services({
-    categories: categoryId,
-    servicesOffered: services,
-    description: description,
-    serviceProvider: serviceProvider1.serviceProviderName,
-    serviceProviderId: serviceProvider1._id,
-    charge: price
-
-  });
-
-  await service.save()
-    .then(async (result) => {
-      console.log('Document inserted:', result);
-      serviceProvider1.service.push(result._id);
-      await serviceProvider1.save();
-      res.status(200).json({ message: "Service registered successfully" });
-    })
-    .catch((error) => {
-      console.error('Error inserting document:', error);
-      res.status(500).json({ error: error.message });
-    });
-
-})
+      serviceToBeUpdated.servicesOffered.push(name);
+      await serviceToBeUpdated.save();
+      const result = await (await serviceToBeUpdated.save()).populate({ path: 'categories', model: 'Category' });
+      serviceProvider.service.push(result._id);
+      await serviceProvider.save();
+    }
+    res.status(200).json({ message: 'Service registered successfully', data: serviceToBeUpdated });
+  }
+  catch (error) {
+    console.error('Error inserting document:', error);
+    res.status(500).json({ message: error });
+  }
+});
 
 const searchCatagories = asyncHandler(async (req, res) => {
   const { search } = req.query;
@@ -60,115 +64,116 @@ const searchCatagories = asyncHandler(async (req, res) => {
 
     }
     else {
-      const regexSearch = new RegExp(search, "i");
+      const regexSearch = new RegExp(search, 'i');
       console.log(regexSearch);
       service = await Category.find({ name: regexSearch });
-      console.log("arpit" + service)
+      console.log('arpit' + service);
 
     }
     res.status(200).send(service);
   } catch (error) {
-    console.error("Error occurred:", error);
+    console.error('Error occurred:', error);
     res.status(400).json({ message: 'Error in searching categories', error: error.message });
   }
 });
 
 const searchService = asyncHandler(async (req, res) => {
-  const { category,price } = req.query;
-  console.log(category,price)
-  console.log((!category || category === "all") && (!price))
+  const { category, price } = req.query;
+  console.log(category);
+
   try {
     let services;
-    if ((!category || category === "all") && (!price)) {
+    if (!category.trim() || category === 'all' && !price) {
       services = await Services.find()
         .populate({
-          path: "categories",
-          model: "Category",
+          path: 'categories',
+          model: 'Category',
         })
         .populate({
-          path: "serviceProviderId",
-          model: "ServiceProvider",
+          path: 'serviceProviderId',
+          model: 'ServiceProvider',
           populate: {
-            path: "location", // Populate the location details within serviceProviderId
-            model: "Location",
+            path: 'location', // Populate the location details within serviceProviderId
+            model: 'Location',
           },
         })
         .exec();
     } else {
       const filter = {};
-      if (category && category !== "all") {
-        const regexSearch = new RegExp(category, "i");
+      if (category && category !== 'all') {
+        const regexSearch = new RegExp(category, 'i');
         const categories = await Category.find({ value: regexSearch }).select('_id');
-        console.log(categories)
-        filter.categories ={ $in: categories };
-        console.log(filter.categories)
+        console.log(categories);
+        filter.categories = { $in: categories };
+        console.log(filter.categories);
       }
-      if (price ) {
+      if (price) {
         // Handle price filter
-        filter.price = { $lte: parseFloat(price) }; 
-        console.log(filter.price)
+        filter.price = { $lte: parseFloat(price) };
+        console.log(filter.price);
       }
-       
-      if (price==='0' ) {
-        console.log("zero")
-        filter.price = { $lte: '0' }; 
-        console.log(filter.price)
+
+      if (price === '0') {
+        console.log('zero');
+        filter.price = { $lte: '0' };
+        console.log(filter.price);
       }
-      
+
 
       if (!price) {
         // Handle price filter
-        filter.price = { $lte: 2000 }; 
-        console.log(filter.price)// Assuming you want services with price less than or equal to the provided price
+        filter.price = { $lte: 2000 };
+        console.log(filter.price);// Assuming you want services with price less than or equal to the provided price
       }
-      
-      const regexSearch = new RegExp(category, "i");
+
+      const regexSearch = new RegExp(category, 'i');
       console.log(regexSearch);
       const categories = await Category.find({ value: regexSearch }).select('_id');
 
-     
+
 
       const serviceProvider = await ServiceProvider.find({
         $or: [
           { serviceProviderName: regexSearch },
           { email: regexSearch },
-    
+
         ],
       }).select('_id');
 
 
-   console.log(regexSearch,serviceProvider,filter.categories,filter.price)
+      console.log(regexSearch, serviceProvider, filter.categories, filter.price);
 
-   services = await Services.find({
-    $or:[
-      {
+      services = await Services.find({
+        $or: [
+          {
             $or: [
               { servicesOffered: regexSearch },
               { serviceProviderId: { $in: serviceProvider } },
-    
+
             ]
           },
-          {    
+          {
             $and: [
               { categories: { $in: categories } },
               { charge: filter.price }
             ]
-   } 
-  ]     
-  }).populate({
-        path: "categories",
-        model: "Category",
+          }
+        ]
+      }).populate({
+        path: 'categories',
+        model: 'Category',
       })
         .populate({
-          path: "serviceProviderId",
-          model: "ServiceProvider",
+          path: 'serviceProviderId',
+          model: 'ServiceProvider',
           populate: {
-            path: "location", // Populate location details for each service provider
-            model: "Location",
+            path: 'location', // Populate location details for each service provider
+            model: 'Location',
           },
         })
         .exec();
-      
+
+
 
     }
     res.status(200).send(services);
@@ -184,8 +189,8 @@ const vendorDetails = asyncHandler(async (req, res) => {
     const {
       serviceProviderName,
       profilePic,
-      email,
-      userType,
+      serviceProviderEmailId,
+      isVendor,
       phoneNo,
       workingAs,
       employeeData,
@@ -199,14 +204,14 @@ const vendorDetails = asyncHandler(async (req, res) => {
     } = req.body;
 
     const serviceProviderExists = await ServiceProvider.findOne({ email });
-    console.log(serviceProviderExists)
+    console.log(serviceProviderExists);
     if (serviceProviderExists) {
       newServiceProvider = await ServiceProvider.findOneAndUpdate({ email }, {
         $set: {
           serviceProviderName,
           profilePic,
-          email,
-          userType,
+          serviceProviderEmailId,
+          isVendor,
           phoneNo,
           workingAs,
           employeeData,
@@ -228,8 +233,8 @@ const vendorDetails = asyncHandler(async (req, res) => {
       newServiceProvider = await ServiceProvider.create({
         serviceProviderName,
         profilePic,
-        email,
-        userType,
+        serviceProviderEmailId,
+        isVendor,
         phoneNo,
         workingAs,
         employeeData,
@@ -244,7 +249,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
 
 
 
-      console.log(newServiceProvider) // Save new service provider
+      console.log(newServiceProvider); // Save new service provider
       await newServiceProvider.save();
     }
     if (newServiceProvider) {
@@ -261,13 +266,13 @@ const vendorDetails = asyncHandler(async (req, res) => {
 
 });
 const ProviderDetails = asyncHandler(async (req, res) => {
-  const { serviceId, serviceName } = req.body
-  let proivderDeatils
+  const { serviceId, serviceName } = req.body;
+  let proivderDeatils;
   if (serviceName) {
-    const serviceids = await Services.find({ servicesOffered: { $in: serviceName } })
-    const serviceIdArray = serviceids.map(service => service._id)
+    const serviceids = await Services.find({ servicesOffered: { $in: serviceName } });
+    const serviceIdArray = serviceids.map(service => service._id);
 
-    console.log(serviceIdArray)
+    console.log(serviceIdArray);
     proivderDeatils = await ServiceProvider.find({ service: { $in: serviceIdArray } })
       .populate({
         path: 'service',
@@ -278,7 +283,7 @@ const ProviderDetails = asyncHandler(async (req, res) => {
     proivderDeatils = await ServiceProvider.find({ service: serviceId })
       .populate({
         path: 'service',
-        select: 'price',
+        select: 'charges',
       });
   }
   res.send(proivderDeatils);
@@ -288,44 +293,44 @@ const ProviderDetails = asyncHandler(async (req, res) => {
 const addEmployee = asyncHandler(async (req, res) => {
   const loginid = req.user.email;
 
-  const { employeeId } = req.body
-  console.log("loggedIn serviceProvider" + loginid)
+  const { employeeId } = req.body;
+  console.log('loggedIn serviceProvider' + loginid);
   if (req.user._id) {
-    const service = await ServiceProvider.findOne({ email: loginid })
+    const service = await ServiceProvider.findOne({ email: loginid });
     if (service) {
       const workingAs = service.workingAs; // Access the workingAs field from the first element of the array
       console.log(workingAs);
 
-      if (workingAs === "vendor") {
+      if (workingAs === 'vendor') {
 
-        const employee = await ServiceProvider.find({ _id: employeeId })
-        console.log("arpit")
+        const employee = await ServiceProvider.find({ _id: employeeId });
+        console.log('arpit');
         if (employee) {
           const workingAsForEmployee = employee[0].workingAs;
-          console.log(workingAsForEmployee)
-          if (workingAsForEmployee == "freelancer")
-            console.log("freelancer")
-          service.employeeData.push(employee[0]._id)
+          console.log(workingAsForEmployee);
+          if (workingAsForEmployee == 'freelancer')
+            console.log('freelancer');
+          service.employeeData.push(employee[0]._id);
           await service.save();
-          res.status(200).send("employee added sucessfully.")
+          res.status(200).send('employee added sucessfully.');
         }
         else {
-          res.status(400).send("Employee working as other than freelancer.");
+          res.status(400).send('Employee working as other than freelancer.');
         }
 
       }
       else {
-        res.status(400).send("Employee working as other than freelancer.");
+        res.status(400).send('Employee working as other than freelancer.');
       }
 
     }
     else {
-      res.status(400).send("Employee working as other than freelancer.");
+      res.status(400).send('Employee working as other than freelancer.');
     }
 
   }
   else {
-    res.status(400).send("Employee working as other than freelancer.");
+    res.status(400).send('Employee working as other than freelancer.');
   }
 }
 
@@ -333,55 +338,35 @@ const addEmployee = asyncHandler(async (req, res) => {
 
 
 const searchFreelancer = asyncHandler(async (req, res) => {
-  const loginid = req.user.email;
-  console.log(loginid)
-  const { search } = req.query;
-  let freelancerSearch;
-
-  if (req.user._id) {
-    const service = await ServiceProvider.find({ email: loginid })
-
-
-
-    if (service.length > 0) {
-      console.log("inseide" + service.length)
-      const workingAs = service[0].workingAs; // Access the workingAs field from the first element of the array
-
-      if (workingAs == "vendor") {
-        if (!search) {
-
-          freelancerSearch = await ServiceProvider.find({ workingAs: "freelancer" })
+  const { query } = req;
+  try {
+    const regexSearch = new RegExp(query.search, 'i');
+    const freelancers = await ServiceProvider.find({
+      $and: [
+        {
+          workingAs: 'freelancer'
+        },
+        {
+          $or: [{
+            serviceProviderName: { $regex: regexSearch }
+          }, {
+            email: { $regex: regexSearch }
+          }]
         }
-        else {
-          const regexSearch = new RegExp(search, "i");
-          freelancerSearch = await ServiceProvider.find({
-            $or: [
-              { serviceProviderName: regexSearch },
-              { email: regexSearch }
-            ],
-
-            workingAs: { $in: ["freelancer", "Freelancer"] }
-
-
-          })
-
-          res.status(200).send(freelancerSearch);
-        }
-      }
-      else {
-        res.status(400).send("Service provider is not a vendor.");
-      }
-    } else {
-      res.status(404).send("Service provider not found.");
-    }
+      ]
+    });
+    res.json(createResponse(freelancers));
+  }
+  catch (error) {
+    res.status(500).json(createResponse(error, undefined, true));
   }
 });
 
 
 const getVendorsByTopCategories = async (req, res) => {
   try {
-    let results = []
-    const topCategories = await Category.find()
+    let results = [];
+    const topCategories = await Category.find();
 
 
 
@@ -391,64 +376,208 @@ const getVendorsByTopCategories = async (req, res) => {
       const categoryId = category._id;
 
       // Find services associated with the category
-      const serviceIds = await Services.find({ categories: categoryId }).select("_id");
+      const serviceIds = await Services.find({ categories: categoryId }).select('_id');
 
       // Get the services IDs from the services
       // const serviceIds = [...new Set(services.flatMap(service => service._id))];
 
       // Find vendors that provide the services
-      const vendors = await ServiceProvider.find({ service: { $in: serviceIds } }).populate({ path: "service", model: "Service" })
+      const vendors = await ServiceProvider.find({ service: { $in: serviceIds } }).populate({ path: 'service', model: 'Service' });
       results.push({
         title: `Top ${category.name} nearby`,
-        data: vendors.map(({ serviceProviderName, profilePic, rating, service, email }) => ({
+        data: vendors.map(({ serviceProviderName, profilePic, rating, service, email, _id }) => ({
           vendorName: serviceProviderName,
-          serviceName: service[0].servicesOffered?.join(", "),
+          serviceName: service[0].servicesOffered?.join(', '),
           rating,
-          charges: service[0].price,
+          charges: service[0].charges,
           image: profilePic,
-          email
+          email,
+          _id: _id
         }))
       });
-    }))
-    res.json(results)
+    }));
+    res.json(results);
   }
   catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}
+};
 
 const updateVendor = asyncHandler(async (req, res) => {
-  const { params, body } = req
-
-  const filter = { key: params.userId };
-
-  const userPayload = {
-    $set: {
-      name: body.name,
-      email: body.email,
-      phoneNo: body.phoneNo,
-    }
-  };
-
-  const vendorPayload = {
-    $set: {
-      name: body.name,
-      workingAs: body.workingAs,
-      email: body.email,
-      phoneNo: body.phoneNo,
-    }
-  };
+  const { params, body, query } = req;
   try {
-    const user = await ServiceProvider.updateOne(filter, userPayload)
-    const vendor = await ServiceProvider.updateOne(filter, vendorPayload)
-    console.log(user,vendor)
-    res.json({ message: "Profile updated successfully" })
+    const userPayload = {
+      $set: {
+        name: body.name,
+        email: body.email,
+        phoneNo: body.phoneNo,
+      }
+    };
+
+    const vendorPayload = {
+      $set: {
+        serviceProviderName: body.name || body.serviceProviderName,
+        workingAs: body.workingAs,
+        serviceProviderEmailId: body.email || body.serviceProviderEmailId,
+        phoneNo: body.phoneNo,
+        establishedDate: body.establishedDate
+      }
+    };
+
+    if (req.file) {
+      const result = await uploadImageToCloudinary(req.file);
+      if (result.secure_url) {
+        vendorPayload.$set.profilePic = result.secure_url;
+      }
+    }
+
+
+
+    let user = {};
+    let vendor = {};
+    if (query.v === 'true' || query.v === true) {
+      const existingUser = await ServiceProvider.findOne({ _id: params.vendorId }).select('serviceProviderEmailId');
+      vendor = await ServiceProvider.findOneAndUpdate({ _id: params.vendorId }, vendorPayload, { new: true });
+      user = await User.findOneAndUpdate({ email: existingUser.serviceProviderEmailId }, userPayload, { new: true });
+    } else {
+      user = await User.findOneAndUpdate({ _id: params.vendorId }, userPayload);
+    }
+
+    res.json(createResponse(getLoggedInUserResponseObject((query.v === 'true' || query.v === true) ? vendor : user, (query.v === 'true' || query.v === true))));
+
   } catch (error) {
     console.error(error);
+    res.status(500).json(createResponse(error, undefined, true));
   }
-})
+});
 
+const updateVendorServices = asyncHandler((req, res) => {
+  const { params, body } = req;
 
+});
 
-module.exports = { searchCatagories, categoriesRegistration, searchService, vendorDetails, ProviderDetails, addEmployee, searchFreelancer, getVendorsByTopCategories, updateVendor };
+const getServicesByVendor = asyncHandler(async (req, res) => {
+  const { params } = req;
+  try {
+    const services = await Services.find({ serviceProviderId: params.vendorId }).populate({ path: 'categories', model: 'Category' });
+    res.json(createResponse(services));
+  }
+  catch (error) {
+    res.sendStatus(500).json(createResponse(error, 'Couldn\'t fetch services', true));
+  }
+});
+
+const updateFreelancer = asyncHandler(async (req, res) => {
+  const { params, body } = req;
+  try {
+    const vendorToBeUpdated = await ServiceProvider.findOne({ _id: params.vendorId });
+    vendorToBeUpdated.freelancers.push(body.freelancerId);
+    await vendorToBeUpdated.save();
+    res.json(createResponse(vendorToBeUpdated));
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true));
+  }
+});
+
+const getFreelancersByVendor = asyncHandler(async (req, res) => {
+  const { params } = req;
+  try {
+    const freelancers = await ServiceProvider.findOne({ _id: params.vendorId }).select('freelancers').populate({ path: 'freelancers', model: 'ServiceProvider' }).populate({
+      path: 'servicesOffered', model: 'ServiceProvider'
+    });
+    res.json(createResponse(freelancers?.freelancers || []));
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true));
+  }
+});
+
+const updateLocation = asyncHandler(async (req, res) => {
+  const { params, body } = req;
+  const { addressLine1, addressLine2, city, state, pinCode, country, name, lat, lon } = body;
+  try {
+    const vendorToBeUpdated = await ServiceProvider.findOne({ _id: params.vendorId });
+    if (body._id) {
+      await Location.findByIdAndUpdate(body._id, { addressLine1, addressLine2, city, state, pinCode, country, name, longLat: { type: 'Point', coordinates: [lon, lat] } });
+    } else {
+      const newLocation = await Location.create({
+        addressLine1, addressLine2, city, state, pinCode, country, name, longLat: { type: 'Point', coordinates: [lon, lat] }
+      });
+      await newLocation.save();
+      vendorToBeUpdated.location.push(newLocation._id);
+      await vendorToBeUpdated.save();
+    }
+    res.json(createResponse(await vendorToBeUpdated.populate({ path: 'location', model: 'Location' })));
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true));
+  }
+});
+
+const updateTimeSlot = asyncHandler(async (req, res) => {
+  const { params, body } = req;
+  const { days, from, to, name } = body;
+  try {
+    const vendorToBeUpdated = await ServiceProvider.findOne({ _id: params.vendorId });
+    vendorToBeUpdated.openHours.push({ days, from, to, name });
+    await vendorToBeUpdated.save();
+    res.json(createResponse(await vendorToBeUpdated.populate({ path: 'location', model: 'Location' })));
+  } catch (error) {
+    res.status(500).json(createResponse(error, undefined, true));
+  }
+});
+
+const getMyProfile = asyncHandler(async (req, res) => {
+  const { vendorId } = req.params;
+  try {
+    const vendorProfile = await ServiceProvider.findById(vendorId);
+    res.json(createResponse(await vendorProfile.populate({ path: 'location', model: 'Location' })));
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+const deleteVendorAddress = asyncHandler(async (req, res) => {
+  const { vendorId, addressId } = req.params;
+  try {
+    await Location.findByIdAndDelete(addressId);
+    const serviceProviderToBeUpdated = await ServiceProvider.findByIdAndUpdate(vendorId, { $pull: { location: addressId } }, { new: true });
+    res.json(createResponse(await serviceProviderToBeUpdated.populate({ path: 'location', model: 'Location' })));
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+const deleteVendorTimeSlot = asyncHandler(async (req, res) => {
+  const { vendorId, slotTimeId } = req.params;
+  try {
+    const serviceProviderToBeUpdated = await ServiceProvider.findByIdAndUpdate(vendorId, { $pull: { openHours: { _id: slotTimeId } } }, { new: true });
+    res.json(createResponse(await serviceProviderToBeUpdated.populate({ path: 'location', model: 'Location' })));
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+const handleError = (error, res, customMessage) => {
+  return res.status(500).json(createResponse(error, customMessage, true));
+};
+
+module.exports = {
+  searchCatagories,
+  addService,
+  searchService,
+  vendorDetails,
+  ProviderDetails,
+  addEmployee,
+  searchFreelancer,
+  getVendorsByTopCategories,
+  updateVendor,
+  updateVendorServices,
+  getServicesByVendor,
+  updateFreelancer,
+  getFreelancersByVendor,
+  updateLocation,
+  updateTimeSlot,
+  getMyProfile,
+  deleteVendorAddress,
+  deleteVendorTimeSlot
+};

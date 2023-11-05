@@ -9,5 +9,8 @@
         "ecmaVersion": "latest"
     },
     "rules": {
+        "quotes": ["error", "single"],
+        "semi": ["error", "always"],
+        "no-multi-spaces": ["error"]
     }
 }

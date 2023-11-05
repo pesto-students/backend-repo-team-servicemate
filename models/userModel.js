@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  
+
   email: {
     type: String,
     required: true
@@ -19,37 +19,37 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  userType: {
+  isVendor: {
     type: Boolean,
     default: false
   },
   address: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Location",
+    ref: 'Location',
   }],
   profile: {
     type: String
   }
 });
 
-userSchema.methods.passwordMatch = async function (enterpassword) {
-  return bcrypt.compare(enterpassword, this.password);
+userSchema.methods.passwordMatch = async function (password) {
+  return bcrypt.compare(password, this.password);
 };
 
 userSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 12);
   }
-  if (this.userType) {
+
+  if (this.isVendor) {
     const ServiceProvider = mongoose.model('ServiceProvider');
     const serviceProvider = new ServiceProvider({
       serviceProviderName: this.name,
-      email: this.email,
-      userType:this.userType,
-      phoneNo:this.phoneNo,
-      profilePic:this.profile,
+      serviceProviderEmailId: this.email,
+      isVendor: this.isVendor,
+      phoneNo: this.phoneNo,
+      profilePic: this.profile,
     });
-
     await serviceProvider.save();
   }
 
