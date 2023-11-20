@@ -392,8 +392,10 @@ const getVendorsByTopCategories = async (req, res) => {
           charges: service[0].charges,
           image: profilePic,
           email,
-          _id: _id
-        }))
+          _id: _id,
+          category
+        })),
+        category
       });
     }));
     res.json(results);
