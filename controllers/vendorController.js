@@ -174,6 +174,7 @@ const searchService = asyncHandler(async (req, res) => {
         .exec();
 
 
+
     }
     res.status(200).send(services);
 
@@ -232,6 +233,7 @@ const vendorDetails = asyncHandler(async (req, res) => {
       newServiceProvider = await ServiceProvider.create({
         serviceProviderName,
         profilePic,
+        serviceProviderEmailId,
         isVendor,
         phoneNo,
         workingAs,

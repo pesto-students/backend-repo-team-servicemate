@@ -5,7 +5,8 @@ const ServiceProvider = require('../models/serviceProvideModel');
 const Appointment = require('../models/appointmentBookingModel ');
 const Location = require('../models/locationModel');
 const { createResponse } = require('../utils');
-
+const bcrypt = require('bcrypt');
+const nodemailer = require("nodemailer");
 
 const register = asyncHandler(async (req, res) => {
   const { name, phoneNo, email, password, isVendor = false, profile } = req.body;
@@ -206,5 +207,54 @@ const addAddress = asyncHandler(async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+const updatePassword = asyncHandler(async (req, res) => {
 
-module.exports = { register, loginUser, appointment, fetchAppointment, addAddress, getLoggedInUserResponseObject };
+
+  const { email, newPassword } = req.body;
+
+  try {
+    // Check if a user with the provided email exists
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+const sendEmail = async (res, req) => {
+  const { email } = req.body
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    auth: {
+      user: 'claire39@ethereal.email',
+      pass: 'Q9jh58Mx8ZMV44zCwQ'
+    }
+  });
+
+  let info = await transporter.sendMail({
+    from: '"arpit4499 👻" <arpit4499@gmail.com>', // sender address
+    to: email, // list of receivers
+    subject: "Hello ✔", // Subject line
+    text: "Hello world?", // plain text body
+    html: "<b>Hello world?</b>", // html body
+  });
+  console.log("Message sent: %s", info.messageId);
+  res.json(info)
+}
+
+module.exports = { register, loginUser, appointment, fetchAppointment, addAddress, getLoggedInUserResponseObject, updatePassword, sendEmail };
