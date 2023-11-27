@@ -149,10 +149,10 @@ const searchService = asyncHandler(async (req, res) => {
             ]
           },
           {    
-            $and: [
-              { categories: { $in: categories } },
-              { charge: filter.price }
-            ]
+            $and:[
+                 { categories: { $in: categories } },
+                 { charge: filter.price }
+                 ]
    } 
   ]     
   }).populate({
@@ -299,7 +299,7 @@ const addEmployee = asyncHandler(async (req, res) => {
       if (workingAs === "vendor") {
 
         const employee = await ServiceProvider.find({ _id: employeeId })
-        console.log("arpit")
+
         if (employee) {
           const workingAsForEmployee = employee[0].workingAs;
           console.log(workingAsForEmployee)

@@ -216,27 +216,33 @@ const updatePassword = asyncHandler(async (req, res) => {
   }
 });
 
-const sendEmail = async(res,req)=>{
-  const {email} =req.body
+// Define the sendEmail function
+const sendEmail = asyncHandler(async (req, res) => {
+  console.log("Request Body:", req.body.to.email); // Log the entire req.body object
+
+  const  email  = req.body.to.email;
 
   const transporter = nodemailer.createTransport({
     host: 'smtp.ethereal.email',
     port: 587,
     auth: {
-        user: 'claire39@ethereal.email',
-        pass: 'Q9jh58Mx8ZMV44zCwQ'
+      user: 'colton.goyette89@ethereal.email',
+        pass: 'A69JbGu3Ku2kNhpW2S'
     }
+  });
+
+  let info = await transporter.sendMail({
+    from: '"arpit4499 👻" <arpit449@gmail.com>', 
+    to: email, 
+    subject: "Reset Password .. ✔", 
+    text: "reset password link", // plain text body
+    html: '<a href="http://localhost:3000/ForgotPassword/">Reset Password</a>', 
+  });
+  console.log("Message sent: %s", info.messageId);
+  res.json(info);
 });
 
-let info = await transporter.sendMail({
-  from: '"arpit4499 👻" <arpit4499@gmail.com>', // sender address
-  to: email, // list of receivers
-  subject: "Hello ✔", // Subject line
-  text: "Hello world?", // plain text body
-  html: "<b>Hello world?</b>", // html body
-});
-console.log("Message sent: %s", info.messageId);
-res.json(info)
-}
+
+
 
 module.exports = { sendEmail,register, login, appointment, fetchAppointment, addAddress, updatePassword};
