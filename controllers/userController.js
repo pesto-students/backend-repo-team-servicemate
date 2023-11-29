@@ -6,7 +6,7 @@ const Appointment = require('../models/appointmentBookingModel ');
 const Location = require('../models/locationModel');
 const { createResponse } = require('../utils');
 const bcrypt = require('bcrypt');
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
 
 const register = asyncHandler(async (req, res) => {
   const { name, phoneNo, email, password, isVendor = false, profile } = req.body;
@@ -235,7 +235,7 @@ const updatePassword = asyncHandler(async (req, res) => {
 });
 
 const sendEmail = async (res, req) => {
-  const { email } = req.body
+  const { email } = req.body;
 
   const transporter = nodemailer.createTransport({
     host: 'smtp.ethereal.email',
@@ -249,12 +249,12 @@ const sendEmail = async (res, req) => {
   let info = await transporter.sendMail({
     from: '"arpit4499 👻" <arpit4499@gmail.com>', // sender address
     to: email, // list of receivers
-    subject: "Hello ✔", // Subject line
-    text: "Hello world?", // plain text body
-    html: "<b>Hello world?</b>", // html body
+    subject: 'Hello ✔', // Subject line
+    text: 'Hello world?', // plain text body
+    html: '<b>Hello world?</b>', // html body
   });
-  console.log("Message sent: %s", info.messageId);
-  res.json(info)
-}
+  console.log('Message sent: %s', info.messageId);
+  res.json(info);
+};
 
 module.exports = { register, loginUser, appointment, fetchAppointment, addAddress, getLoggedInUserResponseObject, updatePassword, sendEmail };
