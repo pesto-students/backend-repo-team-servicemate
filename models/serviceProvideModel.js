@@ -104,7 +104,7 @@ const serviceProviderModal = new mongoose.Schema({
   }],
   vendorStatus: {
     type: String,
-    enum: ['active', 'inactive'],
+    enum: ['active', 'inactive', 'reject'],
     default: 'inactive'
   },
   establishedDate: {

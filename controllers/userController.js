@@ -4,7 +4,7 @@ const generateToken = require('../config/generateToken');
 const ServiceProvider = require('../models/serviceProvideModel');
 const Appointment = require('../models/appointmentBookingModel ');
 const Location = require('../models/locationModel');
-const { createResponse } = require('../utils');
+const { createResponse, handleError } = require('../utils');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 
@@ -98,22 +98,22 @@ const getLoggedInUserResponseObject = (authUser, isVendor, isTokenRequired) => {
   return responseObject;
 };
 
-const appointment = asyncHandler(async (req, res) => {
+const bookAppointment = asyncHandler(async (req, res) => {
   const loginUser = req.user;
-  console.log('login user if' + loginUser._id);
+  console.log('login user if' + loginUser?._id);
 
-  const { serviceProviderId, service, time, userStreet, userCity, userState, userPostalCode, userCountry, appointmentDate } = req.body;
+  const { service, time, userStreet, userCity, userState, userPostalCode, userCountry, appointmentDate, vendorId, userEmailId, userName } = req.body;
 
-  const serv = await ServiceProvider.findOne({ _id: serviceProviderId });
+  const serv = await ServiceProvider.findOne({ _id: vendorId });
 
   console.log('serviceprovide_id' + serv.phoneNo);
   const newAppointment = new Appointment({
-    serviceProvider: serv._id,
-    serviderProviderName: serv.serviceProviderName,
+    serviceProviderId: serv._id,
+    serviceProviderName: serv.serviceProviderName,
     mobile: serv.phoneNo,
     service: service,
-    userId: loginUser._id,
-    userName: loginUser.name,
+    // userId: loginUser?._id,
+    userName: loginUser?.name || userName,
     userAddress: {
       street: userStreet,
       city: userCity,
@@ -123,6 +123,7 @@ const appointment = asyncHandler(async (req, res) => {
     },
     appointmentDate,
     time,
+    userEmailId: userEmailId,
   });
 
   const appointment = await newAppointment.save();
@@ -130,26 +131,26 @@ const appointment = asyncHandler(async (req, res) => {
     res.status(200).json({ data: appointment });
   }
   else {
-    res.status(500).json({ mesaage: 'appointmemt not booked' });
+    res.status(500).json({ message: 'appointmemt not booked' });
   }
 });
 
 
 const fetchAppointment = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-
-  console.log(userId);
-  const appointments = await Appointment.find({
-    $or: [{ userId: userId },
-    { serviceProvider: userId }],
-
-  })
-    .populate('serviceProvider')
-    .populate('userId', '-password')
-    .populate('service')
-    .exec();
-
-  res.status(200).json({ data: appointments });
+  try {
+    const { userId } = req.params;
+    const filter = {
+      [req.query.v ? 'serviceProviderId' : 'userId']: userId
+    };
+    const appointments = await Appointment.find(filter)
+      .populate('serviceProviderId')
+      .populate('userId', '-password')
+      .populate('service')
+      .exec();
+    res.json(createResponse(appointments));
+  } catch (err) {
+    handleError(err, res);
+  }
 });
 
 const addAddress = asyncHandler(async (req, res) => {
@@ -257,4 +258,23 @@ const sendEmail = async (res, req) => {
   res.json(info);
 };
 
-module.exports = { register, loginUser, appointment, fetchAppointment, addAddress, getLoggedInUserResponseObject, updatePassword, sendEmail };
+const updateAppointments = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { v } = req.query;
+  const { status, appointmentDate, time, _id } = req.body;
+  try {
+    const payload = { status };
+    if (status === 'reschedule') {
+      payload.appointmentDate = appointmentDate;
+      payload.time = time;
+    }
+    const appointments = await Appointment.findOneAndUpdate({
+      $and: [{ [v ? 'serviceProviderId' : 'userId']: userId }, { id: _id }, { status: { $ne: status } }]
+    }, payload, { new: true });
+    res.json(createResponse(appointments));
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+module.exports = { register, loginUser, bookAppointment, fetchAppointment, addAddress, getLoggedInUserResponseObject, updatePassword, sendEmail, updateAppointments };

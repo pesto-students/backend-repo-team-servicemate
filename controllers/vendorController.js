@@ -6,6 +6,7 @@ const User = require('../models/userModel');
 const { createResponse, uploadImageToCloudinary } = require('../utils');
 const { getLoggedInUserResponseObject } = require('./userController');
 const Location = require('../models/locationModel');
+const AdminUser = require('../models/adminUserModel');
 // const vendorsByTopCategories = require('./dummyData');
 
 
@@ -128,7 +129,7 @@ const searchService = asyncHandler(async (req, res) => {
 
       const regexSearch = new RegExp(category, 'i');
       console.log(regexSearch);
-      const categories = await Category.find({ value: regexSearch }).select('_id');
+      const categories = category === 'all' ? await Category.find().select('_id') : await Category.find({ value: regexSearch }).select('_id');
 
 
 
@@ -557,8 +558,54 @@ const deleteVendorTimeSlot = asyncHandler(async (req, res) => {
   }
 });
 
+const getVendorsByCategories = asyncHandler(async (req, res) => {
+  const { category } = req.params;
+  try {
+    const vendorsByCategory = await ServiceProvider.find();
+    res.json(createResponse(vendorsByCategory));
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
 const handleError = (error, res, customMessage) => {
   return res.status(500).json(createResponse(error, customMessage, true));
+};
+
+const getAllVendors = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    const serviceProvider = await ServiceProvider.findById(id);
+
+    res.json(createResponse(serviceProvider ? await ServiceProvider.find() : []));
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+const updateVendorStatus = asyncHandler(async (req, res) => {
+  const { adminId, } = req.params;
+  const { id, status } = req.body;
+  try {
+    const validStatus = ['active', 'inactive', 'reject'];
+    if (validStatus.indexOf(status) > -1) {
+      if (checkAdminUser(adminId)) {
+        const vendorToBeUpdated = await ServiceProvider.findByIdAndUpdate(id, { vendorStatus: status }, { new: true });
+        res.json(createResponse(vendorToBeUpdated));
+      } else {
+        throw new Error('user is not an admin');
+      }
+    } else {
+      throw new Error('invalid status');
+    }
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+const checkAdminUser = async (id) => {
+  const adminUser = await AdminUser.findById(id);
+  return Boolean(adminUser?.isAdmin);
 };
 
 module.exports = {
@@ -579,5 +626,8 @@ module.exports = {
   updateTimeSlot,
   getMyProfile,
   deleteVendorAddress,
-  deleteVendorTimeSlot
+  deleteVendorTimeSlot,
+  getVendorsByCategories,
+  getAllVendors,
+  updateVendorStatus
 };

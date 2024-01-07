@@ -1,4 +1,4 @@
-const { cloudinary } = require("../config/cloudinary");
+const { cloudinary } = require('../config/cloudinary');
 
 const createResponse = (data, message, error = false) => {
     if (error) {
@@ -14,7 +14,7 @@ const createResponse = (data, message, error = false) => {
             responseData: data || null,
         };
     }
-}
+};
 
 const uploadImageToCloudinary = (file) => {
     return new Promise((resolve, reject) => {
@@ -29,6 +29,10 @@ const uploadImageToCloudinary = (file) => {
             }
         ).end(file.buffer);
     });
-}
+};
 
-module.exports = { createResponse, uploadImageToCloudinary }
+const handleError = (error, res, customMessage) => {
+    return res.status(500).json(createResponse(error, customMessage, true));
+};
+
+module.exports = { createResponse, uploadImageToCloudinary, handleError };

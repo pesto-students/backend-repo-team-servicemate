@@ -1,32 +1,32 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 
 const appointmentSchema = new mongoose.Schema({
-  serviceProvider: {
+  serviceProviderId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "ServiceProvider",
+    ref: 'ServiceProvider',
     required: true
   },
-  serviderProviderName:{
-     type:String,
-     required: true
+  serviceProviderName: {
+    type: String,
+    required: true
   },
 
   service: {
     type: String,
-    required: true
+    // required: true
   },
-  userId:{
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+    ref: 'User',
+    // required: true
   },
   userName: {
     type: String,
-    required: true
-   
+    // required: true
+
   },
-  userAddress:{
+  userAddress: {
     street: String,
     city: String,
     state: String,
@@ -35,28 +35,31 @@ const appointmentSchema = new mongoose.Schema({
   },
   appointmentDate: {
     type: Date,
-    required: true
+    // required: true
   },
-  time:{
+  time: {
     type: String,
-    required: true
+    // required: true
   },
-  BookingDate:{
+  bookingDate: {
     type: Date,
     default: Date.now
   },
   status: {
     type: String,
-    enum: ["pending", "confirmed", "completed","cancelled","reschedule"],
-    default: "pending"
+    enum: ['pending', 'confirmed', 'completed', 'cancelled', 'rescheduled'],
+    default: 'pending'
   },
-  payment:{
+  payment: {
     type: String,
-    enum: ["pending", "partiallyPaid", "paid"],
-    default: "pending"
+    enum: ['pending', 'partiallyPaid', 'paid'],
+    default: 'pending'
+  },
+  userEmailId: {
+    type: String,
+    required: true
   }
-
 });
 
-const Appointment = mongoose.model("Appointment", appointmentSchema);
+const Appointment = mongoose.model('Appointment', appointmentSchema);
 module.exports = Appointment;
